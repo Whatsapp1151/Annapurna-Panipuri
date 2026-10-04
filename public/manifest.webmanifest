@@ -1,0 +1,11 @@
+{
+"name":"Annapurna Panipuri",
+"short_name":"Annapurna",
+"description":"Menu and Annapurna Rewards loyalty app",
+"start_url":"/",
+"scope":"/",
+"display":"standalone",
+"background_color":"#fffaf1",
+"theme_color":"#244d1c",
+"icons":[{"src":"/logo.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
