@@ -1,0 +1,21 @@
+.ap-category-strip{overflow:visible}
+.ap-category-scroll{
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  touch-action:pan-x pinch-zoom;
+  scroll-behavior:auto!important;
+  scrollbar-width:none;
+  cursor:grab;
+  user-select:none;
+  -webkit-user-select:none;
+  padding:1px 1px 3px;
+}
+.ap-category-scroll:active{cursor:grabbing}
+.ap-category-scroll::-webkit-scrollbar{display:none}
+.ap-category-scroll button{
+  flex:0 0 auto!important;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
