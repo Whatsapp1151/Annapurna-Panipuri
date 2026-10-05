@@ -1,5 +1,7 @@
-const CACHE='annapurna-v3';
-const CORE=['/','/manifest.webmanifest','/logo.svg'];
+const CACHE='annapurna-v4';
+const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('/'))))});
+self.addEventListener('push',event=>{let data={};try{data=event.data?event.data.json():{}}catch{};event.waitUntil(self.registration.showNotification(data.title||'Annapurna Panipuri',{body:data.body||'You have an order update.',icon:'/logo.svg',badge:'/logo.svg',vibrate:[300,100,300,100,700],requireInteraction:data.type==='NEW_ORDER',tag:data.order_id?'order-'+data.order_id:undefined,data:{url:data.url||'/?orders=1'}}))});
+self.addEventListener('notificationclick',event=>{event.notification.close();const url=event.notification.data?.url||'/?orders=1';event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{for(const client of list){if('focus'in client){client.navigate(url);return client.focus()}}return clients.openWindow?clients.openWindow(url):undefined}))});
