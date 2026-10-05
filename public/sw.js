@@ -1,5 +1,5 @@
-const CACHE='annapurna-v6';
-const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/browser-alerts.js'];
+const CACHE='annapurna-v7';
+const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/browser-alerts.js'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
