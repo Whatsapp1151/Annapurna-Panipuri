@@ -1,5 +1,5 @@
-const CACHE='annapurna-v5';
-const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/browser-alerts.js'];
+const CACHE='annapurna-v6';
+const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/browser-alerts.js'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
@@ -17,13 +17,18 @@ self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET') return;
   const url=new URL(event.request.url);
 
-  // Never cache Supabase/API/private cross-origin responses.
+  // Supabase/API/private cross-origin requests always bypass the PWA cache.
   if(url.origin!==self.location.origin) return;
 
+  // Always try the newest app shell first so an installed Home Screen PWA updates
+  // without needing to be removed/reinstalled. Offline mode falls back to cache.
   if(event.request.mode==='navigate'){
     event.respondWith(
-      fetch(event.request)
-        .then(response=>response)
+      fetch(event.request,{cache:'no-store'})
+        .then(response=>{
+          if(response&&response.ok)caches.open(CACHE).then(cache=>cache.put('/',response.clone()));
+          return response;
+        })
         .catch(()=>caches.match('/'))
     );
     return;
@@ -33,16 +38,12 @@ self.addEventListener('fetch',event=>{
   if(!cacheable) return;
 
   event.respondWith(
-    caches.match(event.request).then(cached=>{
-      const network=fetch(event.request).then(response=>{
-        if(response&&response.ok){
-          const copy=response.clone();
-          caches.open(CACHE).then(cache=>cache.put(event.request,copy));
-        }
+    fetch(event.request,{cache:'no-store'})
+      .then(response=>{
+        if(response&&response.ok)caches.open(CACHE).then(cache=>cache.put(event.request,response.clone()));
         return response;
-      });
-      return cached||network;
-    })
+      })
+      .catch(()=>caches.match(event.request))
   );
 });
 
@@ -71,10 +72,7 @@ self.addEventListener('notificationclick',event=>{
   event.waitUntil(
     clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{
       for(const client of list){
-        if('focus' in client){
-          client.navigate(url);
-          return client.focus();
-        }
+        if('focus' in client){client.navigate(url);return client.focus()}
       }
       return clients.openWindow?clients.openWindow(url):undefined;
     })
