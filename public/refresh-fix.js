@@ -1,12 +1,14 @@
 (()=>{
   let refreshing=false;
 
+  function bootStillShowing(){
+    return Boolean(document.querySelector('#root .ap-boot-placeholder'));
+  }
+
   function showBootMessage(text='Updating Annapurna Panipuri…'){
     const root=document.getElementById('root');
     if(!root)return;
-    if(root.children.length===0){
-      root.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:#fffaf0;color:#244d1c;font:700 16px system-ui,-apple-system,sans-serif;text-align:center">${text}</div>`;
-    }
+    root.innerHTML=`<div class="ap-boot-placeholder" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:#fffaf0;color:#244d1c;font:700 16px system-ui,-apple-system,sans-serif;text-align:center">${text}</div>`;
   }
 
   async function safeRefresh(button){
@@ -38,12 +40,11 @@
     safeRefresh(button);
   },true);
 
-  // Recovery guard: if the app shell loads but React never mounts, repair the
-  // service-worker state once and reload from the network instead of staying blank.
+  // Recovery guard: if the loading placeholder is still present after startup,
+  // repair the service-worker state once and reload from the network.
   window.addEventListener('load',()=>{
     setTimeout(async()=>{
-      const root=document.getElementById('root');
-      if(!root||root.children.length>0)return;
+      if(!bootStillShowing())return;
       if(sessionStorage.getItem('annapurna-boot-recovery')==='1'){
         showBootMessage('Unable to load. Please check your internet connection and reopen Annapurna Panipuri.');
         return;
@@ -61,10 +62,8 @@
       location.replace(url.toString());
     },4500);
 
-    // A successful mount clears the one-shot recovery marker.
     setTimeout(()=>{
-      const root=document.getElementById('root');
-      if(root&&root.children.length>0)sessionStorage.removeItem('annapurna-boot-recovery');
+      if(!bootStillShowing())sessionStorage.removeItem('annapurna-boot-recovery');
     },6500);
   });
 })();
