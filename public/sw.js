@@ -1,5 +1,5 @@
-const CACHE='annapurna-v8';
-const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/order-flow-enhancements.css','/browser-alerts.js'];
+const CACHE='annapurna-v9';
+const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/order-flow-enhancements.css','/refresh-fix.js','/browser-alerts.js'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
@@ -26,7 +26,10 @@ self.addEventListener('fetch',event=>{
           if(response&&response.ok)caches.open(CACHE).then(cache=>cache.put('/',response.clone()));
           return response;
         })
-        .catch(()=>caches.match('/'))
+        .catch(async()=>{
+          const cached=await caches.match('/');
+          return cached||new Response('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#fffaf0;font-family:system-ui;color:#244d1c;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center;padding:24px;box-sizing:border-box"><div><b>Annapurna Panipuri</b><p>Unable to load the app right now. Please check your internet connection and reopen the app.</p></div></body>',{headers:{'Content-Type':'text/html; charset=utf-8'}});
+        })
     );
     return;
   }
