@@ -20,6 +20,60 @@ function getPosition(){
   });
 }
 
+function profileComplete(p){
+  const clean=v=>String(v||'').trim();
+  return Boolean(
+    p&&clean(p.full_name)&&clean(p.email)&&clean(p.mobile_number)&&p.mobile_verified_at&&
+    clean(p.address_line1)&&clean(p.city)&&clean(p.postcode)
+  );
+}
+
+function openProfileRequiredModal(){
+  document.querySelector('.ap-profile-required-backdrop')?.remove();
+  const wrap=document.createElement('div');
+  wrap.className='ap-profile-required-backdrop';
+  wrap.innerHTML=`<div class="ap-profile-required-sheet">
+    <div class="ap-profile-required-icon">⚠️</div>
+    <h2>Complete your profile to place an order</h2>
+    <p>Your profile must be complete before Annapurna can accept your order.</p>
+    <div class="ap-profile-required-list">
+      <span>✓ Full name and email</span>
+      <span>✓ Verified mobile number</span>
+      <span>✓ Current address, town/city and postcode</span>
+    </div>
+    <button class="ap-profile-required-open" type="button">Complete profile now</button>
+    <button class="ap-profile-required-cancel" type="button">Not now</button>
+  </div>`;
+  document.body.appendChild(wrap);
+  const close=()=>wrap.remove();
+  wrap.querySelector('.ap-profile-required-cancel').addEventListener('click',close);
+  wrap.addEventListener('click',e=>{if(e.target===wrap)close()});
+  wrap.querySelector('.ap-profile-required-open').addEventListener('click',()=>{
+    close();
+    const openExisting=()=>{
+      const profileButton=document.querySelector('.profile-complete-banner button,.profile-address-card button');
+      if(profileButton){profileButton.click();return true}
+      return false;
+    };
+    if(openExisting())return;
+    const accountButton=[...document.querySelectorAll('nav button')].find(b=>b.textContent.trim().toLowerCase().includes('account'));
+    accountButton?.click();
+    setTimeout(()=>{if(!openExisting())toast('Open Account and complete your current address before ordering.');},250);
+  });
+}
+
+async function checkProfileBeforeOrder(){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session)return true;
+  const {data,error}=await supabase.from('customer_profiles')
+    .select('full_name,email,mobile_number,mobile_verified_at,address_line1,city,postcode')
+    .eq('auth_user_id',session.user.id).maybeSingle();
+  if(error)throw error;
+  if(profileComplete(data))return true;
+  openProfileRequiredModal();
+  return false;
+}
+
 function orderNumberFromCard(card){
   return Number(String(card?.querySelector('.orderTop h2')?.textContent||'').replace(/\D/g,''))||null;
 }
@@ -45,11 +99,12 @@ function openFarCollectionModal(distance,pos,onDone){
     <h2>Collection order</h2>
     <p>You are about <b>${Math.round(distance)} metres</b> from Annapurna Panipuri. You can still order from anywhere, but this order must be collected from the shop.</p>
     <div class="ap-far-warning"><b>Do you agree to collect this order?</b><span>If yes, tell us roughly when you will arrive.</span></div>
+    <div class="ap-points-penalty"><b>⚠️ Important loyalty rule</b><span>If you confirm collection but do not collect your order, you will lose all loyalty points on your account.</span></div>
     <form>
       <label>I expect to arrive in</label>
       <div class="ap-minutes"><input name="minutes" type="number" inputmode="numeric" min="1" max="240" value="15" required/><span>minutes</span></div>
       <small>Example: enter 15 if you expect to reach the shop in about 15 minutes.</small>
-      <button class="ap-far-yes" type="submit">Yes, I’ll collect it</button>
+      <button class="ap-far-yes" type="submit">Yes, I agree & I’ll collect it</button>
       <button class="ap-far-no" type="button">No, cancel order</button>
     </form>
   </div>`;
@@ -64,7 +119,7 @@ function openFarCollectionModal(distance,pos,onDone){
     if(!Number.isInteger(minutes)||minutes<1||minutes>240){toast('Enter a collection time between 1 and 240 minutes.');return}
     const btn=wrap.querySelector('.ap-far-yes');btn.disabled=true;btn.textContent='Saving…';
     const {error}=await supabase.rpc('set_collection_intent',{customer_latitude:pos.coords.latitude,customer_longitude:pos.coords.longitude,eta_minutes:minutes});
-    if(error){btn.disabled=false;btn.textContent='Yes, I’ll collect it';toast(error.message);return}
+    if(error){btn.disabled=false;btn.textContent='Yes, I agree & I’ll collect it';toast(error.message);return}
     close();toast(`Collection confirmed. You said you will arrive in about ${minutes} minutes.`);onDone();
   });
 }
@@ -108,6 +163,8 @@ async function interceptCheckout(button,event){
   event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
   button.disabled=true;
   try{
+    const complete=await checkProfileBeforeOrder();
+    if(!complete){button.disabled=false;return}
     const pos=await getPosition();
     const {data,error}=await supabase.rpc('order_distance',{customer_latitude:pos.coords.latitude,customer_longitude:pos.coords.longitude});
     if(error)throw error;
