@@ -1,5 +1,5 @@
-const CACHE='annapurna-v7';
-const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/browser-alerts.js'];
+const CACHE='annapurna-v8';
+const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/order-flow-enhancements.css','/browser-alerts.js'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
@@ -17,11 +17,8 @@ self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET') return;
   const url=new URL(event.request.url);
 
-  // Supabase/API/private cross-origin requests always bypass the PWA cache.
   if(url.origin!==self.location.origin) return;
 
-  // Always try the newest app shell first so an installed Home Screen PWA updates
-  // without needing to be removed/reinstalled. Offline mode falls back to cache.
   if(event.request.mode==='navigate'){
     event.respondWith(
       fetch(event.request,{cache:'no-store'})
