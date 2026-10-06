@@ -1,5 +1,5 @@
-const CACHE='annapurna-v15';
-const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/order-flow-enhancements.css','/qr-scanner-enhancements.css','/home-merchandising.css','/category-swipe-fix.css','/admin-customer-id.css','/notice-autodismiss.css','/refresh-fix.js','/browser-alerts.js'];
+const CACHE='annapurna-v16';
+const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/order-flow-enhancements.css','/qr-scanner-enhancements.css','/home-merchandising.css','/category-swipe-fix.css','/admin-customer-id.css','/notice-autodismiss.css','/engagement-enhancements.css','/refresh-fix.js','/browser-alerts.js'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
