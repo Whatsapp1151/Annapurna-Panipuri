@@ -1,4 +1,4 @@
-const CACHE='annapurna-v23';
+const CACHE='annapurna-v24';
 const CORE=['/','/manifest.webmanifest','/robots.txt','/sitemap.xml','/Logo1.png','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/order-flow-enhancements.css','/qr-scanner-enhancements.css','/home-merchandising.css','/category-swipe-fix.css','/admin-customer-id.css','/notice-autodismiss.css','/engagement-enhancements.css','/seo.css','/refresh-fix.js','/logo-fix.js','/browser-alerts.js'];
 
 self.addEventListener('install',event=>{
