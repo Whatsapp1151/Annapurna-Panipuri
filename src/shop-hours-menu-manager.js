@@ -5,6 +5,8 @@ const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let shopStatus={is_open:true,opens_at:'10:00',closes_at:'22:00'};
 let staffRole=false;
 let managerBusy=false;
+let reloadScheduled=false;
+let lastMenuSignature=null;
 
 async function loadRole(){
   if(!configured)return;
@@ -21,6 +23,34 @@ function localNotice(message){
   n.style.display='block';
   clearTimeout(n._timer);
   n._timer=setTimeout(()=>{n.style.display='none'},4500);
+}
+
+function currentCustomerTab(){
+  if([...document.querySelectorAll('.pageHead h1')].some(h=>/Choose your favourites/i.test(h.textContent||'')))return 'Menu';
+  if([...document.querySelectorAll('.pageHead .eyebrow')].some(e=>/CHECKOUT/i.test(e.textContent||'')))return 'Menu';
+  const active=document.querySelector('nav button.active span');
+  return active?.textContent?.trim()||'Home';
+}
+
+function restoreCustomerTab(){
+  const target=sessionStorage.getItem('ap-return-tab');
+  if(!target)return;
+  sessionStorage.removeItem('ap-return-tab');
+  let tries=0;
+  const timer=setInterval(()=>{
+    tries++;
+    const btn=[...document.querySelectorAll('nav button')].find(b=>b.querySelector('span')?.textContent?.trim()===target);
+    if(btn){clearInterval(timer);btn.click()}
+    else if(tries>=12)clearInterval(timer);
+  },150);
+}
+
+function scheduleCustomerMenuRefresh(message='🍽 Menu stock has just changed. Refreshing the latest availability…'){
+  if(staffRole||reloadScheduled)return;
+  reloadScheduled=true;
+  sessionStorage.setItem('ap-return-tab',currentCustomerTab());
+  localNotice(message);
+  setTimeout(()=>location.reload(),450);
 }
 
 async function refreshShopStatus(){
@@ -111,7 +141,7 @@ async function renderManager(box){
       setManagerStatus(box,`${name} added to the menu.`);await renderManagerFresh(box);
     });
 
-    box.addEventListener('click',async e=>{
+    box.onclick=async e=>{
       const btn=e.target.closest('button[data-action]');if(!btn)return;
       const row=btn.closest('[data-item-id]'),id=row?.dataset.itemId,item=items.find(x=>x.id===id);if(!item)return;
       const action=btn.dataset.action;
@@ -140,7 +170,7 @@ async function renderManager(box){
         if(error)return setManagerStatus(box,error.message,true);
         setManagerStatus(box,`${item.name} restored and marked In Stock.`);await renderManagerFresh(box);
       }
-    });
+    };
   }catch(e){
     box.innerHTML='<h2>Menu management</h2><p>Could not load menu management.</p>';
   }finally{managerBusy=false}
@@ -168,7 +198,7 @@ async function renderSoldOut(){
   if(error)return;
   section.querySelector('.ap-soldout-wrap')?.remove();
   if(!data?.length)return;
-  const wrap=document.createElement('div');wrap.className='ap-soldout-wrap';wrap.innerHTML='<h2>Sold out today</h2><p>These items will automatically return to stock at 10:00 AM tomorrow unless staff changes them sooner.</p>'+
+  const wrap=document.createElement('div');wrap.className='ap-soldout-wrap';wrap.innerHTML='<h2>Sold out today</h2><p>These items are unavailable to order and will automatically return to stock at 10:00 AM tomorrow unless staff changes them sooner.</p>'+
     data.map(i=>`<div class="menuRow orderMenuRow ap-soldout-row" data-search="${esc((i.name+' '+i.category).toLowerCase())}"><div><b>${esc(i.name)}</b><small>${esc(i.category)}</small></div><strong>${money(i.price)}</strong><button disabled>Sold Out</button></div>`).join('');
   section.append(wrap);
   const input=section.querySelector('.menuSearch');
@@ -184,23 +214,36 @@ const observer=new MutationObserver(()=>{
 });
 observer.observe(document.documentElement,{subtree:true,childList:true});
 
+async function menuSignature(){
+  if(!configured||staffRole)return null;
+  const {data,error}=await supabase.from('menu_items').select('id,available,listed,updated_at').order('id');
+  if(error)return null;
+  return JSON.stringify((data||[]).map(x=>[x.id,x.available,x.listed,x.updated_at]));
+}
+
+async function pollMenuChanges(){
+  const sig=await menuSignature();
+  if(sig===null)return;
+  if(lastMenuSignature===null){lastMenuSignature=sig;return}
+  if(sig!==lastMenuSignature){lastMenuSignature=sig;scheduleCustomerMenuRefresh()}
+}
+
 async function initRealtime(){
   if(!configured)return;
-  supabase.channel('annapurna-menu-live-ui').on('postgres_changes',{event:'*',schema:'public',table:'menu_items'},async()=>{
-    await renderSoldOut();
-    await maybeEnhanceAdmin();
-    if(!staffRole&&!document.querySelector('.cartFloat')){
-      const menuOpen=[...document.querySelectorAll('.pageHead h1')].some(h=>/Choose your favourites/i.test(h.textContent||''));
-      if(menuOpen)setTimeout(()=>location.reload(),250);
-    }else if(!staffRole){localNotice('🍽 The menu has just been updated. Tap ↻ refresh when convenient to see the latest stock.')}
+  supabase.channel('annapurna-menu-live-ui-v2').on('postgres_changes',{event:'*',schema:'public',table:'menu_items'},async()=>{
+    if(staffRole){await maybeEnhanceAdmin();return}
+    scheduleCustomerMenuRefresh('🍽 Menu stock changed. Updating your menu now…');
   }).subscribe();
 }
 
 (async()=>{
   await loadRole();
   await refreshShopStatus();
+  restoreCustomerTab();
   await maybeEnhanceAdmin();
   await renderSoldOut();
   await initRealtime();
+  await pollMenuChanges();
   setInterval(refreshShopStatus,60000);
+  setInterval(pollMenuChanges,15000);
 })();
