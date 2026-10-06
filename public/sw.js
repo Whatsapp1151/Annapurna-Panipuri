@@ -1,5 +1,5 @@
-const CACHE='annapurna-v18';
-const CORE=['/','/manifest.webmanifest','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/order-flow-enhancements.css','/qr-scanner-enhancements.css','/home-merchandising.css','/category-swipe-fix.css','/admin-customer-id.css','/notice-autodismiss.css','/engagement-enhancements.css','/refresh-fix.js','/browser-alerts.js'];
+const CACHE='annapurna-v19';
+const CORE=['/','/manifest.webmanifest','/Logo1.png','/logo.svg','/order.css','/v2.css','/profile-enhancements.css','/order-flow-enhancements.css','/qr-scanner-enhancements.css','/home-merchandising.css','/category-swipe-fix.css','/admin-customer-id.css','/notice-autodismiss.css','/engagement-enhancements.css','/refresh-fix.js','/browser-alerts.js'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
@@ -54,8 +54,8 @@ self.addEventListener('push',event=>{
   event.waitUntil(
     self.registration.showNotification(data.title||'Annapurna Panipuri',{
       body:data.body||'You have an order update.',
-      icon:'/logo.svg',
-      badge:'/logo.svg',
+      icon:'/Logo1.png',
+      badge:'/Logo1.png',
       vibrate:[300,100,300,100,700],
       requireInteraction:isNewOrder,
       silent:false,
