@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://annapurna-panipuri.onrender.com/sitemap.xml
