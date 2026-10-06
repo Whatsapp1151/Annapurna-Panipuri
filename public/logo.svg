@@ -1,30 +1,3 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 330">
-<rect width="330" height="330" rx="36" fill="#fff"/>
-<g fill="#254d1c">
-<ellipse cx="164" cy="88" rx="26" ry="76" transform="rotate(8 164 88)"/>
-<ellipse cx="89" cy="154" rx="29" ry="78" transform="rotate(-42 89 154)"/>
-<ellipse cx="239" cy="155" rx="30" ry="83" transform="rotate(42 239 155)"/>
-</g>
-<g fill="#3f8e2f">
-<ellipse cx="103" cy="98" rx="9" ry="30" transform="rotate(-38 103 98)"/>
-<ellipse cx="220" cy="91" rx="8" ry="28" transform="rotate(44 220 91)"/>
-</g>
-<g fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round">
-<path d="M151 43c-9 48-8 87 2 119"/>
-<path d="M70 132l55 69"/>
-<path d="M259 125l-67 80"/>
-</g>
-<g fill="#fff" stroke="#fff" stroke-linecap="round">
-<path d="M81 141l37 43" stroke-width="9"/>
-<path d="M66 128l14 16M73 121l14 16M80 115l14 16" stroke-width="5"/>
-<ellipse cx="229" cy="145" rx="17" ry="27" transform="rotate(38 229 145)"/>
-<path d="M218 164l-39 48" stroke-width="10"/>
-</g>
-<g fill="#f2b24d">
-<path d="M106 47l4 13 13 4-13 4-4 13-4-13-13-4 13-4z"/>
-<path d="M209 47l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/>
-<path d="M58 216l4 12 12 4-12 4-4 12-4-12-12-4 12-4z"/>
-<path d="M254 207l4 12 12 4-12 4-4 12-4-12-12-4 12-4z"/>
-</g>
-<text x="165" y="278" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="28" fill="#2f8d28">Annapurna Panipuri</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 330" width="330" height="330">
+  <image href="/Logo1.png" x="0" y="0" width="330" height="330" preserveAspectRatio="xMidYMid meet"/>
 </svg>
