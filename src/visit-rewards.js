@@ -68,7 +68,7 @@ function renderOwnReward(){
       <div><small>VISIT REWARD</small><h2>5 visits = Free Panipuri</h2></div>
       <div class="ap-visit-icon">🥣</div>
     </div>
-    <p>Every <b>completed order over £5</b> counts as one qualifying visit.</p>
+    <p>Every <b>completed app order over £5</b> or <b>staff-recorded walk-in purchase over £5</b> counts as one qualifying visit.</p>
     <div class="ap-visit-progress" aria-label="${progress} of 5 qualifying visits completed">
       ${[0,1,2,3,4].map(i=>`<span class="${i<progress?'done':''}">${i<progress?'✓':i+1}</span>`).join('')}
     </div>
@@ -104,6 +104,33 @@ function selectedStaffBox(){
   return [...document.querySelectorAll('.adminBox')].find(b=>b.querySelector('h2')&&!b.querySelector('.search'))||null;
 }
 
+async function recordWalkInVisit(panel){
+  if(!staffSelectedCustomerId)return;
+  const input=panel.querySelector('.ap-walkin-amount');
+  const button=panel.querySelector('.ap-record-walkin');
+  const amount=Number(input?.value);
+  if(!Number.isFinite(amount)||amount<=5){
+    toast('Enter a walk-in bill total above £5 to count this visit.','error');
+    input?.focus();
+    return;
+  }
+  if(!confirm(`Record this £${amount.toFixed(2)} walk-in purchase as 1 qualifying visit?`))return;
+  button.disabled=true;
+  button.textContent='Recording…';
+  const {data,error}=await supabase.rpc('staff_record_walkin_visit',{target_customer:staffSelectedCustomerId,purchase_amount:amount});
+  if(error){
+    toast(error.message||'Could not record this visit.','error');
+    button.disabled=false;
+    button.textContent='Record Visit';
+    return;
+  }
+  const result=Array.isArray(data)?data[0]:data;
+  if(result?.reward_unlocked)toast('🎉 Visit recorded — customer earned a FREE Panipuri!');
+  else toast(`✅ Visit recorded • ${Number(result?.visit_progress||0)}/5 toward free Panipuri`);
+  panel.remove();
+  setTimeout(renderStaffReward,120);
+}
+
 async function renderStaffReward(){
   if(!staffSelectedCustomerId||staffBusy)return;
   const box=selectedStaffBox();if(!box)return;
@@ -117,11 +144,25 @@ async function renderStaffReward(){
     let panel=box.querySelector('.ap-staff-visit-reward');
     if(panel?.dataset.sig===sig)return;
     panel?.remove();panel=document.createElement('div');panel.className='ap-staff-visit-reward';panel.dataset.sig=sig;
-    panel.innerHTML=`<div><small>VISIT REWARD</small><b>${progress}/5 qualifying visits</b><span>${available} free Panipuri ${available===1?'plate':'plates'} available</span></div>${available>0?'<button type="button">Redeem 1 Free Panipuri</button>':'<em>No free plate ready yet</em>'}`;
+    panel.innerHTML=`
+      <div class="ap-staff-visit-summary">
+        <small>VISIT REWARD</small>
+        <b>${progress}/5 qualifying visits</b>
+        <span>${available} free Panipuri ${available===1?'plate':'plates'} available</span>
+      </div>
+      <div class="ap-walkin-box">
+        <label>Walk-in purchase</label>
+        <div class="ap-walkin-row"><span>£</span><input class="ap-walkin-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Bill total"/><button class="ap-record-walkin" type="button">Record Visit</button></div>
+        <small>Only a walk-in purchase <b>over £5</b> counts as 1 visit.</small>
+      </div>
+      ${available>0?'<button class="ap-redeem-free" type="button">Redeem 1 Free Panipuri</button>':'<em>No free plate ready yet</em>'}
+    `;
     box.appendChild(panel);
-    panel.querySelector('button')?.addEventListener('click',async()=>{
+    panel.querySelector('.ap-record-walkin')?.addEventListener('click',()=>recordWalkInVisit(panel));
+    panel.querySelector('.ap-walkin-amount')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();recordWalkInVisit(panel)}});
+    panel.querySelector('.ap-redeem-free')?.addEventListener('click',async()=>{
       if(!confirm('Redeem 1 free Panipuri plate for this customer now?'))return;
-      const btn=panel.querySelector('button');btn.disabled=true;btn.textContent='Redeeming…';
+      const btn=panel.querySelector('.ap-redeem-free');btn.disabled=true;btn.textContent='Redeeming…';
       const {error}=await supabase.rpc('staff_redeem_visit_reward',{target_customer:staffSelectedCustomerId});
       if(error){toast(error.message||'Could not redeem reward.','error');btn.disabled=false;btn.textContent='Redeem 1 Free Panipuri';return}
       toast('✅ Free Panipuri reward redeemed.');panel.remove();setTimeout(renderStaffReward,150);
