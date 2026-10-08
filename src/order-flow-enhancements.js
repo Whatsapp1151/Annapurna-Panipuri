@@ -22,10 +22,7 @@ function getPosition(){
 
 function profileComplete(p){
   const clean=v=>String(v||'').trim();
-  return Boolean(
-    p&&clean(p.full_name)&&clean(p.email)&&clean(p.mobile_number)&&p.mobile_verified_at&&
-    clean(p.address_line1)&&clean(p.city)&&clean(p.postcode)
-  );
+  return Boolean(p&&clean(p.full_name)&&clean(p.email)&&clean(p.mobile_number)&&p.mobile_verified_at);
 }
 
 function openProfileRequiredModal(){
@@ -39,7 +36,6 @@ function openProfileRequiredModal(){
     <div class="ap-profile-required-list">
       <span>✓ Full name and email</span>
       <span>✓ Verified mobile number</span>
-      <span>✓ Current address, town/city and postcode</span>
     </div>
     <button class="ap-profile-required-open" type="button">Complete profile now</button>
     <button class="ap-profile-required-cancel" type="button">Not now</button>
@@ -51,14 +47,14 @@ function openProfileRequiredModal(){
   wrap.querySelector('.ap-profile-required-open').addEventListener('click',()=>{
     close();
     const openExisting=()=>{
-      const profileButton=document.querySelector('.profile-complete-banner button,.profile-address-card button');
+      const profileButton=document.querySelector('.profile-complete-banner button');
       if(profileButton){profileButton.click();return true}
       return false;
     };
     if(openExisting())return;
     const accountButton=[...document.querySelectorAll('nav button')].find(b=>b.textContent.trim().toLowerCase().includes('account'));
     accountButton?.click();
-    setTimeout(()=>{if(!openExisting())toast('Open Account and complete your current address before ordering.');},250);
+    setTimeout(()=>{if(!openExisting())toast('Open Account and complete your name and verified mobile number before ordering.');},250);
   });
 }
 
@@ -66,7 +62,7 @@ async function checkProfileBeforeOrder(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session)return true;
   const {data,error}=await supabase.from('customer_profiles')
-    .select('full_name,email,mobile_number,mobile_verified_at,address_line1,city,postcode')
+    .select('full_name,email,mobile_number,mobile_verified_at')
     .eq('auth_user_id',session.user.id).maybeSingle();
   if(error)throw error;
   if(profileComplete(data))return true;
