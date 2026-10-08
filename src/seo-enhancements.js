@@ -1,3 +1,5 @@
+import './commerce-growth.js';
+
 let seoTimer=null;
 
 function isHomeVisible(){
