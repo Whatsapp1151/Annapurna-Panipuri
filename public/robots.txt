@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://annapurna-panipuri.onrender.com/sitemap.xml
+Sitemap: https://annapurna-panipuri.onrender.com/sitemap.txt
