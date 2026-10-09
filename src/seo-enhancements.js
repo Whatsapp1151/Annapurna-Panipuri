@@ -1,3 +1,4 @@
+import './commerce-growth.js';
 import {supabase} from './supabase';
 
 let seoTimer=null;
@@ -36,9 +37,9 @@ function scheduleSeo(){
   seoTimer=setTimeout(renderLocalSeo,120);
 }
 
-// The growth module determines staff permissions when it starts. If a staff/admin
-// signs in after the page was initially opened logged-out, reload once so those
-// staff-only tools initialise with the authenticated role.
+// commerce-growth.js checks the role when it starts. If a staff/admin signs in
+// after the page originally opened logged-out, reload once so the staff-only
+// growth controls initialise with the authenticated role.
 supabase.auth.onAuthStateChange(async(event,session)=>{
   if(event!=='SIGNED_IN'||!session?.user?.id)return;
   try{
