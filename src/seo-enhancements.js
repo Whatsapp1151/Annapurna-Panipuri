@@ -1,4 +1,4 @@
-import './commerce-growth.js';
+import {supabase} from './supabase';
 
 let seoTimer=null;
 
@@ -35,6 +35,21 @@ function scheduleSeo(){
   clearTimeout(seoTimer);
   seoTimer=setTimeout(renderLocalSeo,120);
 }
+
+// The growth module determines staff permissions when it starts. If a staff/admin
+// signs in after the page was initially opened logged-out, reload once so those
+// staff-only tools initialise with the authenticated role.
+supabase.auth.onAuthStateChange(async(event,session)=>{
+  if(event!=='SIGNED_IN'||!session?.user?.id)return;
+  try{
+    const {data}=await supabase.from('user_roles').select('role').eq('auth_user_id',session.user.id).maybeSingle();
+    if(!['STAFF','ADMIN'].includes(data?.role))return;
+    const key='ap-growth-staff-init-'+session.user.id;
+    if(sessionStorage.getItem(key))return;
+    sessionStorage.setItem(key,'1');
+    setTimeout(()=>location.reload(),150);
+  }catch{}
+});
 
 const observer=new MutationObserver(scheduleSeo);
 observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
