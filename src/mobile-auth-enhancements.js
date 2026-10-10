@@ -5,7 +5,7 @@ const PHONE_WINDOW_MS=15*60_000;
 const PHONE_DAY_MS=24*60*60_000;
 const DEVICE_HOUR_MS=60*60_000;
 const MAX_PHONE_15MIN=3;
-const MAX_PHONE_DAY=6;
+const MAX_PHONE_DAY=3;
 const MAX_DEVICE_HOUR=8;
 let openedAt=0;
 let mode='login';
@@ -26,20 +26,36 @@ function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&l
 function safeKey(phone){return normalisePhone(phone).replace(/\D/g,'')}
 function readTimes(key){try{return JSON.parse(localStorage.getItem(key)||'[]').filter(x=>Number.isFinite(x))}catch{return []}}
 function writeTimes(key,list){try{localStorage.setItem(key,JSON.stringify(list.slice(-30)))}catch{}}
+function lockKey(phone){return 'ap-sms-lock-'+safeKey(phone)}
+function getLockUntil(phone){try{const n=Number(localStorage.getItem(lockKey(phone))||0);return Number.isFinite(n)?n:0}catch{return 0}}
+function formatWait(ms){
+  const mins=Math.max(1,Math.ceil(ms/60_000));
+  if(mins<60)return mins+' minute'+(mins===1?'':'s');
+  const hours=Math.ceil(mins/60);return hours+' hour'+(hours===1?'':'s');
+}
 function smsGuard(phone){
   const now=Date.now(),k=safeKey(phone);
+  const lockUntil=getLockUntil(phone);
+  if(lockUntil>now)return {ok:false,message:'You have used all 3 OTP requests. Please try again in '+formatWait(lockUntil-now)+'.'};
+  if(lockUntil&&lockUntil<=now){try{localStorage.removeItem(lockKey(phone))}catch{}}
   const per=readTimes('ap-sms-'+k).filter(t=>now-t<PHONE_DAY_MS);
   const dev=readTimes('ap-sms-device').filter(t=>now-t<DEVICE_HOUR_MS);
+  if(per.length>=MAX_PHONE_DAY){
+    const until=(per[per.length-1]||now)+PHONE_DAY_MS;
+    try{localStorage.setItem(lockKey(phone),String(until))}catch{}
+    return {ok:false,message:'You have used all 3 OTP requests. Please try again in '+formatWait(until-now)+'.'};
+  }
   if(per.length&&now-per[per.length-1]<COOLDOWN_MS)return {ok:false,message:'Please wait '+Math.ceil((COOLDOWN_MS-(now-per[per.length-1]))/1000)+' seconds before requesting another code.'};
-  if(per.filter(t=>now-t<PHONE_WINDOW_MS).length>=MAX_PHONE_15MIN)return {ok:false,message:'Too many codes requested for this number. Please wait 15 minutes and try again.'};
-  if(per.length>=MAX_PHONE_DAY)return {ok:false,message:'SMS limit reached for this number today. Please try again tomorrow or contact Annapurna.'};
+  if(per.filter(t=>now-t<PHONE_WINDOW_MS).length>=MAX_PHONE_15MIN)return {ok:false,message:'Too many codes requested for this number. Please wait before trying again.'};
   if(dev.length>=MAX_DEVICE_HOUR)return {ok:false,message:'Too many verification requests from this device. Please wait before trying again.'};
   return {ok:true};
 }
 function recordSms(phone){
   const now=Date.now(),k=safeKey(phone);
-  writeTimes('ap-sms-'+k,[...readTimes('ap-sms-'+k).filter(t=>now-t<PHONE_DAY_MS),now]);
+  const per=[...readTimes('ap-sms-'+k).filter(t=>now-t<PHONE_DAY_MS),now];
+  writeTimes('ap-sms-'+k,per);
   writeTimes('ap-sms-device',[...readTimes('ap-sms-device').filter(t=>now-t<DEVICE_HOUR_MS),now]);
+  if(per.length>=MAX_PHONE_DAY){try{localStorage.setItem(lockKey(phone),String(now+PHONE_DAY_MS))}catch{}}
 }
 function friendlyError(e){
   const m=String(e?.message||e||'');
@@ -85,12 +101,12 @@ function renderLogin(){
   w.querySelector('form').onsubmit=async e=>{e.preventDefault();if(new FormData(e.currentTarget).get('website'))return;const fd=new FormData(e.currentTarget),phone=normalisePhone(fd.get('mobile')),password=String(fd.get('password')||'');if(!validPhone(phone))return status('Enter a valid mobile number.');const btn=e.currentTarget.querySelector('button');buttonBusy(btn,true,'Logging in…');try{const {error}=await supabase.auth.signInWithPassword({phone,password});if(error)throw error;status('✓ Logged in successfully.');setTimeout(close,350)}catch(err){status(friendlyError(err));buttonBusy(btn,false,'Log In')}};
 }
 function renderRegister(){
-  const w=base('Create your rewards account','No email is required. We will verify your mobile number by SMS before the account becomes active.',`<form class="ap-mobile-form"><input name="name" autocomplete="name" placeholder="Full name" maxlength="120" required><input name="mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="Mobile number" required><input name="password" type="password" autocomplete="new-password" placeholder="Password (minimum 8 characters)" minlength="8" required><input name="confirm" type="password" autocomplete="new-password" placeholder="Confirm password" minlength="8" required><input class="ap-mobile-hp" name="website" tabindex="-1" autocomplete="off"><button class="ap-mobile-primary" type="submit">Create Account & Send OTP</button></form><button class="ap-mobile-link ap-login" type="button">Already a member? Log in</button><div class="ap-mobile-note">To protect our SMS balance, verification codes are rate-limited. Normal logins never send an SMS.</div>`);
+  const w=base('Create your rewards account','No email is required. We will verify your mobile number by SMS before the account becomes active.',`<form class="ap-mobile-form"><input name="name" autocomplete="name" placeholder="Full name" maxlength="120" required><input name="mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="Mobile number" required><input name="password" type="password" autocomplete="new-password" placeholder="Password (minimum 8 characters)" minlength="8" required><input name="confirm" type="password" autocomplete="new-password" placeholder="Confirm password" minlength="8" required><input class="ap-mobile-hp" name="website" tabindex="-1" autocomplete="off"><button class="ap-mobile-primary" type="submit">Create Account & Send OTP</button></form><button class="ap-mobile-link ap-login" type="button">Already a member? Log in</button><div class="ap-mobile-note">Maximum 3 OTP requests per mobile number. After the 3rd OTP, another code cannot be requested for 24 hours. Normal logins never send an SMS.</div>`);
   w.querySelector('.ap-login').onclick=()=>open('login');
   w.querySelector('form').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget);if(fd.get('website'))return;const phone=normalisePhone(fd.get('mobile')),name=String(fd.get('name')||'').trim(),password=String(fd.get('password')||''),confirm=String(fd.get('confirm')||'');if(Date.now()-openedAt<1000)return status('Please complete the form before continuing.');if(!name)return status('Enter your full name.');if(!validPhone(phone))return status('Enter a valid mobile number.');if(password.length<8)return status('Password must be at least 8 characters.');if(password!==confirm)return status('Passwords do not match.');const guard=smsGuard(phone);if(!guard.ok)return status(guard.message);const btn=e.currentTarget.querySelector('button');buttonBusy(btn,true,'Creating account…');try{const {data,error}=await supabase.auth.signUp({phone,password,options:{data:{full_name:name,mobile_number:phone}}});if(error)throw error;recordSms(phone);pendingPhone=phone;pendingPurpose='register';stage='otp';render();}catch(err){status(friendlyError(err));buttonBusy(btn,false,'Create Account & Send OTP')}};
 }
 function renderReset(){
-  const w=base('Reset password','Enter the mobile number on your account. We will send an OTP; after verification you can choose a new password.',`<form class="ap-mobile-form"><input name="mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="Mobile number" required><input class="ap-mobile-hp" name="website" tabindex="-1" autocomplete="off"><button class="ap-mobile-primary" type="submit">Send Reset OTP</button></form><button class="ap-mobile-link ap-login" type="button">Back to login</button><div class="ap-mobile-note">For security, requesting an OTP does not create a new account.</div>`);
+  const w=base('Reset password','Enter the mobile number on your account. We will send an OTP; after verification you can choose a new password.',`<form class="ap-mobile-form"><input name="mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="Mobile number" required><input class="ap-mobile-hp" name="website" tabindex="-1" autocomplete="off"><button class="ap-mobile-primary" type="submit">Send Reset OTP</button></form><button class="ap-mobile-link ap-login" type="button">Back to login</button><div class="ap-mobile-note">Maximum 3 OTP requests per mobile number. After the 3rd OTP, another code cannot be requested for 24 hours.</div>`);
   w.querySelector('.ap-login').onclick=()=>open('login');
   w.querySelector('form').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget);if(fd.get('website'))return;const phone=normalisePhone(fd.get('mobile'));if(!validPhone(phone))return status('Enter a valid mobile number.');const guard=smsGuard(phone);if(!guard.ok)return status(guard.message);const btn=e.currentTarget.querySelector('button');buttonBusy(btn,true,'Sending OTP…');try{const {error}=await supabase.auth.signInWithOtp({phone,options:{shouldCreateUser:false}});if(error)throw error;recordSms(phone);pendingPhone=phone;pendingPurpose='reset';stage='otp';render();}catch(err){status('If this mobile number belongs to an account, an OTP can be sent after the waiting period. '+friendlyError(err));buttonBusy(btn,false,'Send Reset OTP')}};
 }
@@ -102,7 +118,9 @@ function renderOtp(){
   w.querySelector('form').onsubmit=async e=>{e.preventDefault();const token=String(new FormData(e.currentTarget).get('otp')||'').replace(/\D/g,'');if(token.length<6)return status('Enter the OTP from the SMS.');const btn=e.currentTarget.querySelector('button');buttonBusy(btn,true,'Verifying…');try{const type=pendingPurpose==='legacy'?'phone_change':'sms';const {error}=await supabase.auth.verifyOtp({phone:pendingPhone,token,type});if(error)throw error;if(pendingPurpose==='register'||pendingPurpose==='legacy'){const {error:sErr}=await supabase.rpc('sync_verified_mobile');if(sErr)throw sErr;status('✓ Mobile verified successfully.');setTimeout(close,450);return}stage='new-password';render();}catch(err){status(friendlyError(err));buttonBusy(btn,false,'Verify OTP')}};
 }
 function updateResendButton(btn){
-  const k='ap-sms-'+safeKey(pendingPhone),times=readTimes(k),last=times[times.length-1]||0,remain=Math.max(0,COOLDOWN_MS-(Date.now()-last));if(remain<=0){btn.disabled=false;btn.textContent='Resend OTP';return}btn.disabled=true;btn.textContent='Resend in '+Math.ceil(remain/1000)+'s';setTimeout(()=>updateResendButton(btn),1000);
+  const now=Date.now(),lockUntil=getLockUntil(pendingPhone);
+  if(lockUntil>now){btn.disabled=true;btn.textContent='3/3 OTPs used • try again in '+formatWait(lockUntil-now);setTimeout(()=>updateResendButton(btn),60_000);return}
+  const k='ap-sms-'+safeKey(pendingPhone),times=readTimes(k),last=times[times.length-1]||0,remain=Math.max(0,COOLDOWN_MS-(now-last));if(remain<=0){btn.disabled=false;btn.textContent='Resend OTP';return}btn.disabled=true;btn.textContent='Resend in '+Math.ceil(remain/1000)+'s';setTimeout(()=>updateResendButton(btn),1000);
 }
 async function resendOtp(btn){
   const guard=smsGuard(pendingPhone);if(!guard.ok)return status(guard.message);buttonBusy(btn,true,'Sending…');try{if(pendingPurpose==='legacy'){const {error}=await supabase.auth.updateUser({phone:pendingPhone});if(error)throw error}else{const {error}=await supabase.auth.signInWithOtp({phone:pendingPhone,options:{shouldCreateUser:false}});if(error)throw error}recordSms(pendingPhone);status('✓ A new OTP was sent.');updateResendButton(btn)}catch(err){status(friendlyError(err));buttonBusy(btn,false,'Resend OTP')}}
