@@ -5,7 +5,7 @@ let renderTimer=null;
 
 const clean=v=>String(v||'').trim();
 const profileComplete=p=>Boolean(
-  p&&clean(p.full_name)&&clean(p.email)&&clean(p.mobile_number)&&p.mobile_verified_at
+  p&&clean(p.full_name)&&clean(p.mobile_number)&&p.mobile_verified_at
 );
 
 function toast(message){
@@ -51,7 +51,7 @@ function renderCompletionBanner(){
   if(profileComplete(state.profile)){old?.remove();return}
   if(old)return;
   const box=document.createElement('div');box.className='profile-complete-banner';
-  box.innerHTML=`<div class="profile-complete-copy"><b>Complete your profile</b><span>Your full name, email and verified mobile number are required before you can place an order.</span></div><button type="button">Complete profile</button>`;
+  box.innerHTML=`<div class="profile-complete-copy"><b>Complete your profile</b><span>Your full name and verified mobile number are required before you can place an order.</span></div><button type="button">Complete profile</button>`;
   box.querySelector('button').addEventListener('click',openProfileModal);
   main.insertBefore(box,main.firstChild);
 }
@@ -63,10 +63,9 @@ function openProfileModal(){
   wrap.innerHTML=`<div class="ap-profile-sheet">
     <button class="ap-profile-x" type="button" aria-label="Close">×</button>
     <div class="ap-profile-kicker">CUSTOMER PROFILE</div><h2>Complete your details</h2>
-    <p>We only need your name, email and verified mobile number for your account and orders.</p>
+    <p>We only need your name and verified mobile number for your account and orders.</p>
     <form>
       <label>Full name *</label><input name="full_name" autocomplete="name" value="${attr(p.full_name)}" required maxlength="120"/>
-      <label>Email</label><input value="${attr(p.email)}" disabled/>
       <label>Verified mobile</label><input value="${attr(p.mobile_number)}" disabled/>
       <button class="ap-profile-save" type="submit">Save profile</button>
     </form>
@@ -92,14 +91,14 @@ function renderAdminCustomerButton(){
 async function openCustomerLog(){
   document.querySelector('.ap-customer-log-backdrop')?.remove();
   const wrap=document.createElement('div');wrap.className='ap-customer-log-backdrop';
-  wrap.innerHTML=`<div class="ap-customer-log"><div class="ap-log-head"><div><small>ADMIN ONLY</small><h2>Registered customers</h2><p>Customer contact details and profile status.</p></div><button class="ap-log-x" type="button">×</button></div><input class="ap-log-search" placeholder="Search name, email, mobile or customer ID…"/><div class="ap-log-count">Loading customers…</div><div class="ap-log-list"><div class="ap-log-loading">Loading…</div></div></div>`;
+  wrap.innerHTML=`<div class="ap-customer-log"><div class="ap-log-head"><div><small>ADMIN ONLY</small><h2>Registered customers</h2><p>Customer mobile details and profile status.</p></div><button class="ap-log-x" type="button">×</button></div><input class="ap-log-search" placeholder="Search name, mobile or customer ID…"/><div class="ap-log-count">Loading customers…</div><div class="ap-log-list"><div class="ap-log-loading">Loading…</div></div></div>`;
   document.body.appendChild(wrap);wrap.querySelector('.ap-log-x').addEventListener('click',()=>wrap.remove());wrap.addEventListener('click',e=>{if(e.target===wrap)wrap.remove()});
-  const {data,error}=await supabase.from('customer_profiles').select('customer_id,full_name,email,mobile_number,mobile_verified_at,profile_completed_at,created_at').order('created_at',{ascending:false});
+  const {data,error}=await supabase.from('customer_profiles').select('customer_id,full_name,mobile_number,mobile_verified_at,profile_completed_at,created_at').order('created_at',{ascending:false});
   const list=wrap.querySelector('.ap-log-list'),count=wrap.querySelector('.ap-log-count');
   if(error){list.innerHTML=`<div class="ap-log-loading">${escapeHtml(error.message)}</div>`;count.textContent='Could not load customers';return}
   const rows=data||[];
   const paint=query=>{
-    const q=clean(query).toLowerCase();const filtered=rows.filter(c=>!q||[c.full_name,c.email,c.mobile_number,c.customer_id].some(v=>clean(v).toLowerCase().includes(q)));
+    const q=clean(query).toLowerCase();const filtered=rows.filter(c=>!q||[c.full_name,c.mobile_number,c.customer_id].some(v=>clean(v).toLowerCase().includes(q)));
     count.textContent=`${filtered.length} of ${rows.length} registered customer${rows.length===1?'':'s'}`;
     list.innerHTML=filtered.length?filtered.map(customerCard).join(''):'<div class="ap-log-loading">No matching customers.</div>';
   };
@@ -108,7 +107,7 @@ async function openCustomerLog(){
 
 function customerCard(c){
   const complete=Boolean(c.profile_completed_at);
-  return `<article class="ap-customer-card"><div class="ap-customer-top"><div><b>${escapeHtml(c.full_name||'Customer')}</b><small>Registered ${new Date(c.created_at).toLocaleDateString('en-GB')}</small></div><span class="${complete?'complete':'incomplete'}">${complete?'Complete':'Incomplete'}</span></div><div class="ap-customer-detail"><strong>📱</strong><span>${escapeHtml(c.mobile_number||'No mobile')} ${c.mobile_verified_at?'✓ verified':'• not verified'}</span></div><div class="ap-customer-detail"><strong>✉️</strong><span>${escapeHtml(c.email||'No email')}</span></div><small class="ap-customer-id">Customer ID: ${escapeHtml(c.customer_id)}</small></article>`;
+  return `<article class="ap-customer-card"><div class="ap-customer-top"><div><b>${escapeHtml(c.full_name||'Customer')}</b><small>Registered ${new Date(c.created_at).toLocaleDateString('en-GB')}</small></div><span class="${complete?'complete':'incomplete'}">${complete?'Complete':'Incomplete'}</span></div><div class="ap-customer-detail"><strong>📱</strong><span>${escapeHtml(c.mobile_number||'No mobile')} ${c.mobile_verified_at?'✓ verified':'• not verified'}</span></div><small class="ap-customer-id">Customer ID: ${escapeHtml(c.customer_id)}</small></article>`;
 }
 
 function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
