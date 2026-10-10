@@ -1,3 +1,5 @@
+import('/src/auth-email-rate-limit.js').catch(()=>{});
+
 (()=>{
   let refreshing=false;
 
