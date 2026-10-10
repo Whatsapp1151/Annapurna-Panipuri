@@ -22,7 +22,7 @@ function getPosition(){
 
 function profileComplete(p){
   const clean=v=>String(v||'').trim();
-  return Boolean(p&&clean(p.full_name)&&clean(p.email)&&clean(p.mobile_number)&&p.mobile_verified_at);
+  return Boolean(p&&clean(p.full_name)&&clean(p.mobile_number)&&p.mobile_verified_at);
 }
 
 function openProfileRequiredModal(){
@@ -34,7 +34,7 @@ function openProfileRequiredModal(){
     <h2>Complete your profile to place an order</h2>
     <p>Your profile must be complete before Annapurna can accept your order.</p>
     <div class="ap-profile-required-list">
-      <span>✓ Full name and email</span>
+      <span>✓ Full name</span>
       <span>✓ Verified mobile number</span>
     </div>
     <button class="ap-profile-required-open" type="button">Complete profile now</button>
@@ -62,7 +62,7 @@ async function checkProfileBeforeOrder(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session)return true;
   const {data,error}=await supabase.from('customer_profiles')
-    .select('full_name,email,mobile_number,mobile_verified_at')
+    .select('full_name,mobile_number,mobile_verified_at')
     .eq('auth_user_id',session.user.id).maybeSingle();
   if(error)throw error;
   if(profileComplete(data))return true;
@@ -78,7 +78,7 @@ async function getOrderByNumber(orderNumber){
   if(!orderNumber)return null;
   if(orderCache.has(orderNumber))return orderCache.get(orderNumber);
   const {data,error}=await supabase.from('orders')
-    .select('order_id,order_number,status,distance_m,far_order,customer_eta_minutes,customer_expected_at,admin_prep_minutes,promised_ready_at,recommended_collection_at,customer_phone,customer_profiles(full_name,mobile_number,email)')
+    .select('order_id,order_number,status,distance_m,far_order,customer_eta_minutes,customer_expected_at,admin_prep_minutes,promised_ready_at,recommended_collection_at,customer_phone,customer_profiles(full_name,mobile_number)')
     .eq('order_number',orderNumber).maybeSingle();
   if(error)throw error;
   if(data)orderCache.set(orderNumber,data);
