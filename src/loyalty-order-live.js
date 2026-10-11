@@ -3,21 +3,26 @@ import {supabase,configured} from './supabase';
 let latestAccount=null;
 let channel=null;
 let observer=null;
+let patchQueued=false;
 
 function money(n){return '£'+Number(n||0).toFixed(2)}
+function setText(el,value){if(el&&el.textContent!==String(value))el.textContent=String(value)}
 
 function patchPoints(){
+  patchQueued=false;
   if(!latestAccount)return;
   document.querySelectorAll('.pointsCard').forEach(card=>{
-    const main=card.querySelector('strong');
-    if(main)main.textContent=`⭐ ${latestAccount.points_balance||0} Points`;
-    const value=card.querySelector('p b');
-    if(value)value.textContent=money((latestAccount.points_balance||0)*0.05);
-    const earned=card.querySelector('.stats div:first-child b');
-    if(earned)earned.textContent=String(latestAccount.lifetime_points_earned||0);
-    const redeemed=card.querySelector('.stats div:nth-child(2) b');
-    if(redeemed)redeemed.textContent=String(latestAccount.lifetime_points_redeemed||0);
+    setText(card.querySelector('strong'),`⭐ ${latestAccount.points_balance||0} Points`);
+    setText(card.querySelector('p b'),money((latestAccount.points_balance||0)*0.05));
+    setText(card.querySelector('.stats div:first-child b'),String(latestAccount.lifetime_points_earned||0));
+    setText(card.querySelector('.stats div:nth-child(2) b'),String(latestAccount.lifetime_points_redeemed||0));
   });
+}
+
+function queuePatch(){
+  if(patchQueued)return;
+  patchQueued=true;
+  requestAnimationFrame(patchPoints);
 }
 
 function showToast(points){
@@ -31,30 +36,36 @@ function showToast(points){
 }
 
 async function refreshAccount(customerId,points){
-  const {data}=await supabase.from('loyalty_accounts').select('*').eq('customer_id',customerId).maybeSingle();
-  if(data){latestAccount=data;patchPoints();}
-  if(points>0)showToast(points);
+  try{
+    const {data,error}=await supabase.from('loyalty_accounts').select('*').eq('customer_id',customerId).maybeSingle();
+    if(error)return;
+    if(data){latestAccount=data;queuePatch()}
+    if(points>0)showToast(points);
+  }catch{}
 }
 
 async function subscribeForSession(session){
-  if(channel){await supabase.removeChannel(channel);channel=null;}
-  latestAccount=null;
-  if(!session?.user)return;
-  const {data:profile}=await supabase.from('customer_profiles').select('customer_id').eq('auth_user_id',session.user.id).maybeSingle();
-  if(!profile?.customer_id)return;
+  try{
+    if(channel){await supabase.removeChannel(channel);channel=null}
+    latestAccount=null;
+    if(!session?.user)return;
+    const {data:profile}=await supabase.from('customer_profiles').select('customer_id').eq('auth_user_id',session.user.id).maybeSingle();
+    if(!profile?.customer_id)return;
 
-  channel=supabase.channel('customer-loyalty-auto-'+profile.customer_id)
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'orders',filter:'customer_id=eq.'+profile.customer_id},payload=>{
-      if(payload.new?.status==='COMPLETED'&&payload.old?.status!=='COMPLETED'){
-        const pts=Math.max(0,Math.floor(Number(payload.new?.total||0)));
-        setTimeout(()=>refreshAccount(profile.customer_id,pts),250);
-      }
-    }).subscribe();
+    channel=supabase.channel('customer-loyalty-auto-'+profile.customer_id)
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'orders',filter:'customer_id=eq.'+profile.customer_id},payload=>{
+        if(payload.new?.status==='COMPLETED'&&payload.old?.status!=='COMPLETED'){
+          const pts=Math.max(0,Math.floor(Number(payload.new?.total||0)));
+          setTimeout(()=>void refreshAccount(profile.customer_id,pts),300);
+        }
+      }).subscribe();
+  }catch{}
 }
 
 if(configured){
-  supabase.auth.getSession().then(({data})=>subscribeForSession(data.session));
-  supabase.auth.onAuthStateChange((_event,session)=>subscribeForSession(session));
-  observer=new MutationObserver(()=>patchPoints());
-  observer.observe(document.documentElement,{childList:true,subtree:true});
+  supabase.auth.getSession().then(({data})=>void subscribeForSession(data.session)).catch(()=>{});
+  supabase.auth.onAuthStateChange((_event,session)=>{void subscribeForSession(session)});
+  observer=new MutationObserver(()=>queuePatch());
+  const root=document.getElementById('root')||document.body;
+  observer.observe(root,{childList:true,subtree:true});
 }
