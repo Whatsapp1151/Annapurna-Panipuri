@@ -8,6 +8,7 @@ let lastRun=0;
 const money=n=>'£'+Number(n||0).toFixed(2);
 const clean=v=>String(v??'').trim();
 const orderNoFromCard=card=>Number(clean(card?.querySelector('.orderTop h2')?.textContent).replace(/\D/g,''))||null;
+function setText(el,value){const next=String(value);if(el&&el.textContent!==next)el.textContent=next}
 
 function groupBursts(orders){
   const byCustomer=new Map();
@@ -51,7 +52,7 @@ function addNote(card,group){
   const others=group.slice(1).map(o=>'#'+o.order_number).join(', ');
   let note=host.querySelector('.ap-combined-order-note');
   if(!note){note=document.createElement('small');note.className='ap-combined-order-note';host.appendChild(note)}
-  note.textContent=`Combined order • includes ${others}`;
+  setText(note,`Combined order • includes ${others}`);
   Object.assign(note.style,{display:'block',marginTop:'4px',fontWeight:'800',color:'#8a5a00'});
 }
 
@@ -80,14 +81,12 @@ function applyCustomer(groups){
   for(const group of groups){
     const primary=group[0];
     const card=cards.get(Number(primary.order_number));if(!card)continue;
-    const sig=group.map(o=>o.order_id).join('|');
-    card.dataset.apCombinedGroup=sig;
+    card.dataset.apCombinedGroup=group.map(o=>o.order_id).join('|');
     addNote(card,group);
     paintItems(card,group);
     const total=group.reduce((s,o)=>s+Number(o.total||0),0);
-    const totalEl=card.querySelector('.orderTotal b');if(totalEl&&totalEl.textContent!==money(total))totalEl.textContent=money(total);
-    const placed=card.querySelector('.orderedAt');
-    if(placed)placed.textContent=`Combined ${group.length} orders placed together • ${new Date(primary.created_at).toLocaleString('en-GB')}`;
+    setText(card.querySelector('.orderTotal b'),money(total));
+    setText(card.querySelector('.orderedAt'),`Combined ${group.length} orders placed together • ${new Date(primary.created_at).toLocaleString('en-GB')}`);
     for(const o of group.slice(1)){
       const extra=cards.get(Number(o.order_number));
       if(extra){extra.dataset.apGroupedHidden='1';extra.style.display='none'}
@@ -106,7 +105,7 @@ function applyAdmin(groups){
     paintItems(card,group);
     const total=group.reduce((s,o)=>s+Number(o.total||0),0);
     const pay=[...card.querySelectorAll('.orderMeta span')].find(x=>clean(x.textContent).startsWith('💷'));
-    if(pay)pay.textContent=`💷 ${money(total)} • Pay at collection`;
+    setText(pay,`💷 ${money(total)} • Pay at collection`);
     for(const o of group.slice(1)){
       const extra=cards.get(Number(o.order_number));
       if(extra){extra.dataset.apGroupedHidden='1';extra.style.display='none'}
@@ -141,7 +140,7 @@ async function run(){
 function schedule(){
   if(queued)return;
   queued=true;
-  const wait=Math.max(80,700-(Date.now()-lastRun));
+  const wait=Math.max(100,800-(Date.now()-lastRun));
   setTimeout(()=>void run(),wait);
 }
 
