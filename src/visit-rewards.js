@@ -68,7 +68,7 @@ function renderOwnReward(){
       <div><small>VISIT REWARD</small><h2>5 visits = Free Panipuri</h2></div>
       <div class="ap-visit-icon">🥣</div>
     </div>
-    <p>Every <b>completed app order over £5</b> or <b>staff-recorded walk-in purchase over £5</b> counts as one qualifying visit.</p>
+    <p>A <b>completed app order over £5</b> or <b>staff-recorded walk-in purchase over £5</b> can count as a qualifying visit. Maximum <b>1 qualifying visit per customer per calendar day</b>.</p>
     <div class="ap-visit-progress" aria-label="${progress} of 5 qualifying visits completed">
       ${[0,1,2,3,4].map(i=>`<span class="${i<progress?'done':''}">${i<progress?'✓':i+1}</span>`).join('')}
     </div>
@@ -114,7 +114,7 @@ async function recordWalkInVisit(panel){
     input?.focus();
     return;
   }
-  if(!confirm(`Record this £${amount.toFixed(2)} walk-in purchase as 1 qualifying visit?`))return;
+  if(!confirm(`Record this £${amount.toFixed(2)} walk-in purchase? Only one qualifying visit can count per customer per day.`))return;
   button.disabled=true;
   button.textContent='Recording…';
   const {data,error}=await supabase.rpc('staff_record_walkin_visit',{target_customer:staffSelectedCustomerId,purchase_amount:amount});
@@ -125,7 +125,8 @@ async function recordWalkInVisit(panel){
     return;
   }
   const result=Array.isArray(data)?data[0]:data;
-  if(result?.reward_unlocked)toast('🎉 Visit recorded — customer earned a FREE Panipuri!');
+  if(result?.already_counted_today)toast('Purchase recorded, but this customer already has today’s qualifying visit. Visit progress was not increased.');
+  else if(result?.reward_unlocked)toast('🎉 Visit recorded — customer earned a FREE Panipuri!');
   else toast(`✅ Visit recorded • ${Number(result?.visit_progress||0)}/5 toward free Panipuri`);
   panel.remove();
   setTimeout(renderStaffReward,120);
@@ -153,7 +154,7 @@ async function renderStaffReward(){
       <div class="ap-walkin-box">
         <label>Walk-in purchase</label>
         <div class="ap-walkin-row"><span>£</span><input class="ap-walkin-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Bill total"/><button class="ap-record-walkin" type="button">Record Visit</button></div>
-        <small>Only a walk-in purchase <b>over £5</b> counts as 1 visit.</small>
+        <small>Purchase must be <b>over £5</b>. Maximum <b>1 qualifying visit per customer per calendar day</b>, including app orders.</small>
       </div>
       ${available>0?'<button class="ap-redeem-free" type="button">Redeem 1 Free Panipuri</button>':'<em>No free plate ready yet</em>'}
     `;
@@ -183,7 +184,7 @@ async function tick(){
   if(staffSelectedCustomerId)renderStaffReward();
 }
 
-setInterval(()=>{void tick()},650);
+setInterval(()=>{void tick()},1500);
 window.addEventListener('focus',()=>{lastOwnLoad=0;void tick()});
 supabase?.auth?.onAuthStateChange(()=>{currentCustomerId=null;currentReward=null;lastOwnLoad=0;setTimeout(()=>void tick(),150)});
 void tick();
