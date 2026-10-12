@@ -1,10 +1,11 @@
+import './admin-create-customer.js';
 import {supabase,configured} from './supabase';
 
 let role='CUSTOMER';
 let renderQueued=false;
 
 const clean=v=>String(v??'').trim();
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 
 function addStyles(){
   if(document.getElementById('ap-remove-points-css'))return;
