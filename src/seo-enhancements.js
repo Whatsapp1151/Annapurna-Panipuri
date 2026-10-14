@@ -4,7 +4,7 @@ import {supabase,configured} from './supabase';
 const SITE_URL='https://annapurna-panipuri.onrender.com/';
 const LOGO_URL=SITE_URL+'Logo1.png';
 const INSTAGRAM_URL='https://www.instagram.com/annapurna_panipuri/';
-const PRIORITY_CATEGORIES=['Panipuri & Chaats','Momos','Dabeli','Pizza Khakhra','Sandwiches','Maggie','Indo Chinese','Drinks'];
+const PRIORITY_CATEGORIES=['Panipuri & Chaats','Momos','Dabeli','Pizza Khakhra','Pizza','Sandwiches','Maggie','Indo Chinese','Drinks'];
 
 let seoTimer=null;
 let menuTimer=null;
@@ -37,7 +37,7 @@ function categories(){
 
 function topCategoryText(limit=6){
   const list=categories().slice(0,limit);
-  return list.length?list.join(', '):'Panipuri, Chaats, Momos, Dabeli, Pizza Khakhra and Indo-Chinese';
+  return list.length?list.join(', '):'Panipuri, Chaats, Momos, Dabeli, Pizza Khakhra and Pizza';
 }
 
 function description(){
