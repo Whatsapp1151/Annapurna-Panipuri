@@ -127,11 +127,11 @@ async function run(){
       supabase.from('user_roles').select('role').eq('auth_user_id',session.user.id).maybeSingle()
     ]);
     if(customerView&&profile?.customer_id){
-      const {data}=await supabase.from('orders').select('order_id,order_number,customer_id,status,total,created_at,completed_at,order_items(order_item_id,menu_item_id,item_name,unit_price,quantity,line_total,item_notes)').eq('customer_id',profile.customer_id).order('created_at',{ascending:false}).limit(40);
+      const {data}=await supabase.from('orders').select('order_id,order_number,customer_id,status,total,created_at,completed_at,order_items(order_item_id,menu_item_id,item_name,unit_price,quantity,line_total,item_notes)').eq('customer_id',profile.customer_id).gte('created_at',new Date(Date.now()-7*86400000).toISOString()).order('created_at',{ascending:false});
       applyCustomer(groupBursts(data||[]));
     }
     if(adminView&&['STAFF','ADMIN'].includes(roleRow?.role)){
-      const {data}=await supabase.from('orders').select('order_id,order_number,customer_id,status,total,created_at,completed_at,order_items(order_item_id,menu_item_id,item_name,unit_price,quantity,line_total,item_notes)').order('created_at',{ascending:false}).limit(80);
+      const {data}=await supabase.from('orders').select('order_id,order_number,customer_id,status,total,created_at,completed_at,order_items(order_item_id,menu_item_id,item_name,unit_price,quantity,line_total,item_notes)').gte('created_at',new Date(Date.now()-7*86400000).toISOString()).order('created_at',{ascending:false});
       applyAdmin(groupBursts(data||[]));
     }
   }catch(e){console.warn('Order grouping skipped',e)}finally{running=false}
