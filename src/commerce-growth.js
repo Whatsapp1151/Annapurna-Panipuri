@@ -157,13 +157,14 @@ async function sendWinback(customerId,promotionId,button){
 
 async function renderAdminGrowth(force=false){
   if(!staff||renderingAdmin)return;
-  const head=[...document.querySelectorAll('.pageHead h1')].find(h=>/Admin Dashboard/i.test(h.textContent||''));const section=head?.closest('section');if(!section)return;
-  let box=section.querySelector('.ap-growth-admin');if(box&&!force)return;renderingAdmin=true;
+  const head=[...document.querySelectorAll('.pageHead h1')].find(h=>/Admin Dashboard/i.test(h.textContent||''));const section=head?.closest('section');const host=section?.querySelector('.ap-admin-overview');if(!host)return;
+  let box=host.querySelector('.ap-growth-admin');if(box&&!force)return;renderingAdmin=true;
   try{
     const [{data:analytics},{data:promos},{data:inactive}]=await Promise.all([
       nativeRpc('staff_analytics'),supabase.from('promotions').select('*').order('created_at',{ascending:false}),nativeRpc('staff_inactive_customers',{inactive_days:14})
     ]);
-    if(!box){box=document.createElement('div');box.className='ap-growth-admin';section.appendChild(box)}
+    if(!host.isConnected)return;
+    if(!box){box=document.createElement('div');box.className='ap-growth-admin';host.appendChild(box)}
     const activePromos=(promos||[]).filter(p=>p.active&&new Date(p.expires_at)>new Date());
     const a=analytics||{},t=a.today||{},s=a.last7||{};
     box.innerHTML=`<div class="ap-growth-title"><div><span>GROWTH TOOLS</span><h2>Offers, customers & analytics</h2></div><button class="ap-growth-refresh">Refresh</button></div>
@@ -175,7 +176,7 @@ async function renderAdminGrowth(force=false){
     const form=box.querySelector('.ap-promo-form');const status=(m,bad=false)=>{const e=form.querySelector('.ap-promo-status');e.textContent=m;e.classList.toggle('bad',bad)};form.onsubmit=e=>{e.preventDefault();createPromotion(form,status)};
     box.querySelectorAll('.ap-toggle-promo').forEach(btn=>btn.onclick=async()=>{const id=btn.closest('[data-promo-id]').dataset.promoId;const p=(promos||[]).find(x=>x.promotion_id===id);const {error}=await supabase.from('promotions').update({active:!p.active,updated_at:new Date().toISOString()}).eq('promotion_id',id);if(error)toast(error.message);else renderAdminGrowth(true)});
     box.querySelectorAll('.ap-send-winback').forEach(btn=>btn.onclick=()=>sendWinback(btn.dataset.customer,box.querySelector('.ap-winback-promo')?.value,btn));
-  }finally{renderingAdmin=false}
+  }finally{renderingAdmin=false;if(!host.isConnected&&document.querySelector('.ap-admin-overview'))setTimeout(()=>renderAdminGrowth(),0)}
 }
 
 async function decorateOrderDetails(){
