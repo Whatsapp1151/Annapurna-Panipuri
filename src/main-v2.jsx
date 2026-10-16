@@ -112,7 +112,7 @@ function App(){
       {!gated&&tab==='account'&&<Account profile={profile} refresh={loadPrivate} signOut={signOut} setNotice={setNotice} setAuthMode={setAuthMode} setTab={setTab} onVerifyMobile={()=>setPhoneVerify(true)}/>} 
       {tab==='admin'&&isStaff&&<Admin setNotice={setNotice} refreshMenu={loadMenu} orderPulse={orderPulse} session={session}/>} 
     </main>
-    {cartCount>0&&tab!=='checkout'&&<button className="cartFloat" onClick={()=>setTab('checkout')}><ShoppingCart size={20}/><span>{cartCount} item{cartCount!==1?'s':''}</span><b>{money(cartTotal)}</b></button>}
+    {cartCount>0&&tab!=='checkout'&&<button className="cartFloat clearerBasket" aria-label={`View basket, ${cartCount} ${cartCount===1?'item':'items'}, ${money(cartTotal)}`} onClick={()=>setTab('checkout')}><ShoppingCart size={20} aria-hidden="true"/><span className="basketSummary">{cartCount} item{cartCount!==1?'s':''} · <b>{money(cartTotal)}</b></span><span className="basketAction">View basket <ChevronRight size={18} aria-hidden="true"/></span></button>}
     <nav>{[['home',Home,'Home'],['menu',Utensils,'Menu'],['rewards',QrCode,'My QR'],['history',History,'History'],['account',User,'Account']].map(([k,I,l])=><button key={k} className={tab===k?'active':''} onClick={()=>setTab(k)}><I size={21}/><span>{l}</span></button>)}</nav>
     {authMode&&<Auth mode={authMode} close={()=>setAuthMode(null)} setNotice={setNotice} onRegistered={loadPrivate}/>} 
     {phoneVerify&&profile&&<PhoneVerification profile={profile} close={()=>setPhoneVerify(false)} setNotice={setNotice} onDone={async()=>{setPhoneVerify(false);await loadPrivate()}}/>}
@@ -197,15 +197,33 @@ function PhoneVerification({profile,close,setNotice,onDone}){
 
 function Auth({mode,close,setNotice}){
   const [m,setM]=useState(mode),[busy,setBusy]=useState(false),[regPhone,setRegPhone]=useState(''),[regOtp,setRegOtp]=useState(''),[regOtpStep,setRegOtpStep]=useState(false);
+  const [values,setValues]=useState({name:'',mobile:'',email:'',password:'',confirm:''}),[errors,setErrors]=useState({}),[showPassword,setShowPassword]=useState(false),[formError,setFormError]=useState(''),[submitted,setSubmitted]=useState(false);
   useEffect(()=>setM(mode),[mode]);
+  useEffect(()=>{setErrors({});setFormError('');setSubmitted(false);setShowPassword(false)},[m]);
+  const fields=m==='register'?['name','mobile','email','password','confirm']:m==='reset'?['email']:m==='change-password'?['password']:['email','password'];
+  const labels={name:'Full name',mobile:'Mobile number',email:'Email address',password:'Password',confirm:'Confirm password'};
+  function fieldError(name,v){
+    if(!v[name].trim())return name==='confirm'?'Confirm your password.':`Enter your ${labels[name].toLowerCase()}.`;
+    if(name==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim()))return 'Enter a valid email address, such as name@example.com.';
+    if(name==='mobile'&&!validPhone(normalisePhone(v.mobile)))return 'Enter a valid mobile number, such as 07442 216487.';
+    if(name==='password'&&m!=='login'&&v.password.length<8)return 'Use at least 8 characters.';
+    if(name==='confirm'&&v.confirm!==v.password)return 'Your passwords do not match.';
+    return '';
+  }
+  function changeField(name,value){const next={...values,[name]:value};setValues(next);setFormError('');setErrors(old=>({...old,...(old[name]||submitted?{[name]:fieldError(name,next)}:{}),...(name==='password'&&old.confirm?{confirm:fieldError('confirm',next)}:{})}))}
+  function field(name){const password=name==='password'||name==='confirm';return <div className="authField" key={name}><label htmlFor={'auth-'+name}>{labels[name]}</label><input id={'auth-'+name} name={name} type={password?(showPassword?'text':'password'):name==='email'?'email':name==='mobile'?'tel':'text'} inputMode={name==='email'?'email':name==='mobile'?'tel':undefined} autoComplete={name==='name'?'name':name==='mobile'?'tel':name==='email'?'email':m==='login'?'current-password':'new-password'} autoCapitalize={name==='name'?'words':'none'} spellCheck={false} value={values[name]} onChange={e=>changeField(name,e.target.value)} onBlur={()=>setErrors(old=>({...old,[name]:fieldError(name,values)}))} required aria-invalid={!!errors[name]} aria-describedby={errors[name]?'auth-'+name+'-error':name==='password'&&m!=='login'?'auth-password-hint':undefined}/>{name==='password'&&m!=='login'&&<small id="auth-password-hint">Use at least 8 characters.</small>}{errors[name]&&<small className="authError" id={'auth-'+name+'-error'}>{errors[name]}</small>}</div>}
+
   async function submit(e){
-    e.preventDefault();if(!configured)return setNotice('App configuration is not ready.');setBusy(true);
-    const fd=new FormData(e.currentTarget),email=fd.get('email'),password=fd.get('password');let err;
+    e.preventDefault();if(busy)return;setSubmitted(true);setFormError('');
+    const nextErrors=Object.fromEntries(fields.map(name=>[name,fieldError(name,values)]));setErrors(nextErrors);
+    if(Object.values(nextErrors).some(Boolean)){requestAnimationFrame(()=>document.getElementById('auth-error-summary')?.focus());return}
+    if(!configured){setFormError('App configuration is not ready. Please try again shortly.');return}setBusy(true);
+    const fd=new FormData(e.currentTarget),email=fd.get('email')?.trim(),password=fd.get('password');let err;
     try{
       if(m==='register'){
         const phone=normalisePhone(fd.get('mobile'));if(!validPhone(phone))throw new Error('Enter a valid mobile number. Mobile verification is compulsory.');
         if(password!==fd.get('confirm'))throw new Error('Passwords do not match.');
-        const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:fd.get('name'),mobile_number:phone},emailRedirectTo:location.origin}});if(error)throw error;
+        const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:fd.get('name').trim(),mobile_number:phone},emailRedirectTo:location.origin}});if(error)throw error;
         if(data.session){const {error:pErr}=await supabase.auth.updateUser({phone});if(pErr)throw new Error(friendlySmsError(pErr));setRegPhone(phone);setRegOtpStep(true);setNotice('📱 Account created. Enter the SMS OTP sent to '+phone+' to finish registration.');return}
         setNotice('Account created. Confirm your email first, then log in and verify your mobile number to finish registration.');close();return
       }
@@ -214,11 +232,16 @@ function Auth({mode,close,setNotice}){
       else{({error:err}=await supabase.auth.signInWithPassword({email,password}))}
       if(err)throw err;
       setNotice(m==='reset'?'Password reset email sent.':m==='change-password'?'Password changed successfully.':'Welcome back.');close()
-    }catch(e2){setNotice(e2?.message||'Could not continue.')}finally{setBusy(false)}
+    }catch(e2){setFormError(e2?.message||'Could not continue. Please try again.')}finally{setBusy(false)}
   }
   async function finishRegistration(){if(!/^\d{6,10}$/.test(regOtp.trim()))return setNotice('Enter the SMS OTP code.');setBusy(true);try{const {error}=await supabase.auth.verifyOtp({phone:regPhone,token:regOtp.trim(),type:'phone_change'});if(error)throw error;const {error:sErr}=await supabase.rpc('sync_verified_mobile');if(sErr)throw sErr;setNotice('✅ Registration complete. Your mobile number is verified.');close()}catch(e){setNotice(e?.message||'OTP verification failed.')}finally{setBusy(false)}}
   if(regOtpStep)return <div className="modal"><div className="sheet phoneSheet"><Phone className="phoneHero" size={42}/><h2>Finish registration</h2><p className="sheetIntro">Enter the SMS OTP sent to <b>{regPhone}</b>.</p><input inputMode="numeric" autoComplete="one-time-code" value={regOtp} onChange={e=>setRegOtp(e.target.value.replace(/\D/g,'').slice(0,10))} placeholder="6-digit OTP"/><button className="primary full" disabled={busy} onClick={finishRegistration}>{busy?'Verifying…':'Verify & Finish Registration'}</button></div></div>;
-  return <div className="modal"><div className="sheet"><button className="x" onClick={close}>×</button><img src="/logo.svg"/><h2>{m==='register'?'Create your rewards account':m==='reset'?'Reset password':m==='change-password'?'Set a new password':'Welcome back'}</h2><form onSubmit={submit}>{m==='register'&&<><input name="name" placeholder="Full name" required/><input type="tel" name="mobile" placeholder="Mobile number (required)" required/></>}{m!=='change-password'&&<input type="email" name="email" placeholder="Email address" required/>}{m!=='reset'&&<input type="password" name="password" placeholder="Password" minLength="8" required/>}{m==='register'&&<input type="password" name="confirm" placeholder="Confirm password" minLength="8" required/>}<button className="primary" disabled={busy}>{busy?'Please wait…':m==='register'?'Create Account & Verify Mobile':m==='reset'?'Send Reset Email':m==='change-password'?'Update Password':'Log In'}</button></form>{m==='login'&&<button className="link" onClick={()=>setM('reset')}>Forgot password?</button>}{m==='reset'&&<button className="link" onClick={()=>setM('login')}>Back to login</button>}{!['reset','change-password'].includes(m)&&<button className="link" onClick={()=>setM(m==='register'?'login':'register')}>{m==='register'?'Already a member? Log in':'New here? Create account'}</button>}</div></div>
+  return <div className="modal"><div className="sheet smarterAuth"><button className="x" aria-label="Close" onClick={close}>×</button><img src="/logo.svg" alt="Annapurna Panipuri"/><h2>{m==='register'?'Create your rewards account':m==='reset'?'Reset password':m==='change-password'?'Set a new password':'Welcome back'}</h2>{m==='register'&&<p className="authIntro">Earn rewards and order for collection. All fields are required. We’ll verify your mobile by SMS.</p>}<form noValidate onSubmit={submit} aria-busy={busy}>
+    {submitted&&Object.values(errors).some(Boolean)&&<div id="auth-error-summary" className="authErrorSummary" tabIndex={-1}><b>Please check your details</b><ul>{fields.filter(name=>errors[name]).map(name=><li key={name}><a href={'#auth-'+name} onClick={e=>{e.preventDefault();document.getElementById('auth-'+name)?.focus()}}>{errors[name]}</a></li>)}</ul></div>}
+    {formError&&<p className="authErrorSummary" role="alert">{formError}</p>}
+    {fields.map(field)}
+    {m!=='reset'&&<button type="button" className="passwordToggle" aria-pressed={showPassword} onClick={()=>setShowPassword(x=>!x)}>{showPassword?'Hide password':'Show password'}{m==='register'?'s':''}</button>}
+    <button className="primary" disabled={busy}>{busy?'Please wait…':m==='register'?'Create Account & Verify Mobile':m==='reset'?'Send Reset Email':m==='change-password'?'Update Password':'Log In'}</button></form>{m==='login'&&<button className="link" disabled={busy} onClick={()=>setM('reset')}>Forgot password?</button>}{m==='reset'&&<button className="link" disabled={busy} onClick={()=>setM('login')}>Back to login</button>}{!['reset','change-password'].includes(m)&&<button className="link" disabled={busy} onClick={()=>setM(m==='register'?'login':'register')}>{m==='register'?'Already a member? Log in':'New here? Create account'}</button>}</div></div>
 }
 
 function Admin({setNotice,refreshMenu,orderPulse,session}){
