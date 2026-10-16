@@ -162,7 +162,6 @@ function renderLocalSeo(){
     <p>Annapurna Panipuri serves ${count?`${count} listed menu items across ${categories().length} categories`:'a wide range of vegetarian Indian street food'}, including ${topCategoryText(6)} and more. Order ahead for collection and earn loyalty rewards on qualifying purchases.</p>
     <address>Outside 437 Kenton Road, Harrow, London, HA3 0XY</address>
     <p>Vegetarian street food including panipuri, chaats, momos and dabeli. Browse our menu in the app and order ahead for collection.</p>
-    <p><a href="https://www.google.com/maps/search/?api=1&amp;query=437+Kenton+Road+Harrow+HA3+0XY" target="_blank" rel="noopener noreferrer">Directions to 437 Kenton Road</a> · <a href="https://www.instagram.com/annapurna_panipuri/" target="_blank" rel="noopener noreferrer">Follow Annapurna Panipuri on Instagram</a></p>
     <div class="ap-seo-tags" aria-label="Live menu categories">
       ${(cats.length?cats:PRIORITY_CATEGORIES.slice(0,6)).map(c=>`<span>${escapeHtml(c)}</span>`).join('')}
     </div>`;
