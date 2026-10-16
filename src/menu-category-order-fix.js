@@ -39,7 +39,7 @@ function categoryName(node){return clean(node.querySelector(':scope > h2')?.text
 
 function reorderCategories(){
   const section=menuSection();
-  if(!section||!categoryOrder.length)return;
+  if(!section||section.dataset.nativeMenu==='true'||!categoryOrder.length)return;
   const categories=[...section.querySelectorAll(':scope > .category')];
   if(categories.length<2)return;
 

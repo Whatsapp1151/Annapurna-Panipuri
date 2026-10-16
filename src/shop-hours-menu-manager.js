@@ -26,6 +26,7 @@ function localNotice(message){
 }
 
 function currentCustomerTab(){
+  if(document.querySelector('[data-native-menu="true"]'))return 'Menu';
   if([...document.querySelectorAll('.pageHead h1')].some(h=>/Choose your favourites/i.test(h.textContent||'')))return 'Menu';
   if([...document.querySelectorAll('.pageHead .eyebrow')].some(e=>/CHECKOUT/i.test(e.textContent||'')))return 'Menu';
   const active=document.querySelector('nav button.active span');
@@ -191,6 +192,7 @@ async function maybeEnhanceAdmin(){
 }
 
 async function renderSoldOut(){
+  if(document.querySelector('[data-native-menu="true"]'))return;
   const heading=[...document.querySelectorAll('.pageHead h1')].find(h=>/Choose your favourites/i.test(h.textContent||''));
   if(!heading)return;
   const section=heading.closest('section');if(!section)return;

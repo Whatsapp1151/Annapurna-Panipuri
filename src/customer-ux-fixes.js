@@ -122,6 +122,7 @@ function ensureCategory(section,name,orderedCategories){
 }
 
 function renderInlineSoldOut(){
+  if(document.querySelector('[data-native-menu="true"]'))return;
   const heading=[...document.querySelectorAll('.pageHead h1')].find(h=>/Choose your favourites/i.test(h.textContent||''));
   if(!heading||!menuItems.length)return;
   const section=heading.closest('section');if(!section)return;

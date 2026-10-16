@@ -149,6 +149,7 @@ function renderHotFavourites(){
 function renderCategoryStrip(){
   const section=[...document.querySelectorAll('section')].find(s=>clean(s.querySelector('.eyebrow')?.textContent)==='ORDER & MENU');
   if(!section){document.querySelector('.ap-category-strip')?.remove();return}
+  if(section.dataset.nativeMenu==='true'){scrollPendingTarget();return}
   const cats=[...section.querySelectorAll('.category')];if(!cats.length)return;
   const names=cats.map(c=>clean(c.querySelector('h2')?.textContent)).filter(Boolean);
   const sig=names.join('|');let strip=section.querySelector('.ap-category-strip');
@@ -163,6 +164,7 @@ function renderCategoryStrip(){
 
 function updateActiveCategory(){
   const section=[...document.querySelectorAll('section')].find(s=>clean(s.querySelector('.eyebrow')?.textContent)==='ORDER & MENU');if(!section)return;
+  if(section.dataset.nativeMenu==='true')return;
   const strip=section.querySelector('.ap-category-strip');if(!strip)return;
   const cats=[...section.querySelectorAll('.category')];let active=0;
   cats.forEach((c,i)=>{if(c.getBoundingClientRect().top<=150)active=i});
