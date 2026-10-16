@@ -143,29 +143,9 @@ function applyStructuredData(){
 }
 
 function renderLocalSeo(){
-  const existing=document.querySelector('.ap-local-seo');
-  if(!isHomeVisible()){
-    existing?.remove();
-    return;
-  }
-  const main=document.querySelector('main');if(!main)return;
-  const cats=categories().slice(0,8);
-  const count=menuItems.length;
-  const signature=[cats.join('|'),count].join('::');
-  let section=existing;
-  if(section?.dataset.signature===signature)return;
-  if(!section){section=document.createElement('section');section.className='ap-local-seo';section.setAttribute('aria-label','About Annapurna Panipuri in Kenton, Harrow')}
-  section.dataset.signature=signature;
-  section.innerHTML=`
-    <span class="ap-seo-kicker">KENTON • HARROW</span>
-    <h2>Visit Annapurna Panipuri in Kenton, Harrow</h2>
-    <p>Annapurna Panipuri serves ${count?`${count} listed menu items across ${categories().length} categories`:'a wide range of vegetarian Indian street food'}, including ${topCategoryText(6)} and more. Order ahead for collection and earn loyalty rewards on qualifying purchases.</p>
-    <address>Outside 437 Kenton Road, Harrow, London, HA3 0XY</address>
-    <p>Vegetarian street food including panipuri, chaats, momos and dabeli. Browse our menu in the app and order ahead for collection.</p>
-    <div class="ap-seo-tags" aria-label="Live menu categories">
-      ${(cats.length?cats:PRIORITY_CATEGORIES.slice(0,6)).map(c=>`<span>${escapeHtml(c)}</span>`).join('')}
-    </div>`;
-  if(!section.isConnected)main.appendChild(section);
+  // Remove the old injected block. Home owns its compact About disclosure in React,
+  // so tab changes cannot leave this content in another screen's DOM.
+  document.querySelectorAll('.ap-local-seo').forEach(section=>section.remove());
 }
 
 function escapeHtml(value){
