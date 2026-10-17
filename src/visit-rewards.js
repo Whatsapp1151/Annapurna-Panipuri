@@ -9,6 +9,19 @@ let staffBusy=false;
 
 const clean=v=>String(v??'').trim();
 
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function londonMonth(){const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit'}).formatToParts(new Date());return parts.find(p=>p.type==='year').value+'-'+parts.find(p=>p.type==='month').value+'-01'}
+async function rewardDetails(customerId){
+ const [counter,month,earned]=await Promise.all([
+  supabase.from('visit_rewards').select('qualifying_visits,free_panipuri_available,lifetime_qualifying_visits').eq('customer_id',customerId).maybeSingle(),
+  supabase.from('monthly_visit_reward_items').select('item_name,reward_month').eq('reward_month',londonMonth()).maybeSingle(),
+  supabase.from('earned_visit_rewards').select('reward_id,item_name,earned_at').eq('customer_id',customerId).is('redeemed_at',null).order('earned_at').order('reward_id')
+ ]);
+ if(counter.error||month.error||earned.error)throw counter.error||month.error||earned.error;
+ return {...(counter.data||{qualifying_visits:0,free_panipuri_available:0,lifetime_qualifying_visits:0}),monthly_item:month.data?.item_name||null,earned:earned.data||[]};
+}
+function earnedSummary(reward){const groups=new Map();for(const r of reward.earned||[]){const name=r.item_name||'Reward selection pending';groups.set(name,(groups.get(name)||0)+1)}return [...groups].map(([name,n])=>`${n} × ${esc(name)}`).join('<br>')}
+
 function toast(message,kind='ok'){
   document.querySelector('.ap-visit-toast')?.remove();
   const el=document.createElement('div');
@@ -43,8 +56,7 @@ async function loadOwnReward(force=false){
     const {data:profile}=await supabase.from('customer_profiles').select('customer_id').eq('auth_user_id',session.user.id).maybeSingle();
     currentCustomerId=profile?.customer_id||null;
     if(!currentCustomerId){currentReward={qualifying_visits:0,free_panipuri_available:0,lifetime_qualifying_visits:0};return}
-    const {data}=await supabase.from('visit_rewards').select('qualifying_visits,free_panipuri_available,lifetime_qualifying_visits').eq('customer_id',currentCustomerId).maybeSingle();
-    currentReward=data||{qualifying_visits:0,free_panipuri_available:0,lifetime_qualifying_visits:0};
+    currentReward=await rewardDetails(currentCustomerId);
     lastOwnLoad=Date.now();
   }catch{
     currentReward=currentReward||{qualifying_visits:0,free_panipuri_available:0,lifetime_qualifying_visits:0};
@@ -58,25 +70,26 @@ function renderOwnReward(){
   const progress=Math.max(0,Math.min(4,Number(reward.qualifying_visits)||0));
   const available=Math.max(0,Number(reward.free_panipuri_available)||0);
   const lifetime=Math.max(0,Number(reward.lifetime_qualifying_visits)||0);
-  const sig=[progress,available,lifetime].join(':');
+  const sig=JSON.stringify([progress,available,lifetime,reward.monthly_item,reward.earned]);
   let card=section.querySelector('.ap-visit-reward-card');
   if(card?.dataset.sig===sig)return;
   if(!card){card=document.createElement('article');card.className='ap-visit-reward-card'}
   card.dataset.sig=sig;
   card.innerHTML=`
     <div class="ap-visit-top">
-      <div><small>VISIT REWARD</small><h2>5 visits = Free Panipuri</h2></div>
+      <div><small>VISIT REWARD</small><h2>5 visits = ${reward.monthly_item?'Free '+esc(reward.monthly_item):'a free reward'}</h2></div>
       <div class="ap-visit-icon">🥣</div>
     </div>
+    <p>This month’s free item changes on the 1st of each month. Your visits carry over. The item you earn on your fifth visit stays yours until redeemed.</p>
     <p>A <b>completed app order over £5</b> or <b>staff-recorded walk-in purchase over £5</b> can count as a qualifying visit. Maximum <b>1 qualifying visit per customer per calendar day</b>.</p>
     <div class="ap-visit-progress" aria-label="${progress} of 5 qualifying visits completed">
       ${[0,1,2,3,4].map(i=>`<span class="${i<progress?'done':''}">${i<progress?'✓':i+1}</span>`).join('')}
     </div>
     <div class="ap-visit-status">
       <b>${progress}/5 qualifying visits</b>
-      <span>${progress===4?'Just 1 more qualifying visit!':`${5-progress} more to your next free plate`}</span>
+      <span>${progress===4?'Just 1 more qualifying visit!':`${5-progress} more to your next free reward`}</span>
     </div>
-    ${available>0?`<div class="ap-free-reward"><strong>🎉 ${available} FREE Panipuri ${available===1?'plate':'plates'} available</strong><span>Show your My QR code to staff to redeem at the counter.</span></div>`:''}
+    ${available>0?`<div class="ap-free-reward"><strong>🎉 ${available} free ${available===1?'reward':'rewards'} available</strong><span>${earnedSummary(reward)}</span><span>Show your My QR code to staff to redeem at the counter.</span></div>`:''}
   `;
   const points=section.querySelector('.ap-qr-points,.pointsCard');
   const qr=section.querySelector('.qrCard');
@@ -126,8 +139,8 @@ async function recordWalkInVisit(panel){
   }
   const result=Array.isArray(data)?data[0]:data;
   if(result?.already_counted_today)toast('Purchase recorded, but this customer already has today’s qualifying visit. Visit progress was not increased.');
-  else if(result?.reward_unlocked)toast('🎉 Visit recorded — customer earned a FREE Panipuri!');
-  else toast(`✅ Visit recorded • ${Number(result?.visit_progress||0)}/5 toward free Panipuri`);
+  else if(result?.reward_unlocked)toast('Visit recorded — customer earned a free reward!');
+  else toast(`✅ Visit recorded • ${Number(result?.visit_progress||0)}/5 toward a free reward`);
   panel.remove();
   setTimeout(renderStaffReward,120);
 }
@@ -137,11 +150,12 @@ async function renderStaffReward(){
   const box=selectedStaffBox();if(!box)return;
   staffBusy=true;
   try{
-    const {data}=await supabase.from('visit_rewards').select('qualifying_visits,free_panipuri_available').eq('customer_id',staffSelectedCustomerId).maybeSingle();
-    const reward=data||{qualifying_visits:0,free_panipuri_available:0};
+    const customerId=staffSelectedCustomerId;
+    const reward=await rewardDetails(customerId);
+    if(customerId!==staffSelectedCustomerId||!box.isConnected)return;
     const progress=Math.max(0,Math.min(4,Number(reward.qualifying_visits)||0));
     const available=Math.max(0,Number(reward.free_panipuri_available)||0);
-    const sig=[staffSelectedCustomerId,progress,available].join(':');
+    const sig=JSON.stringify([customerId,progress,available,reward.monthly_item,reward.earned]);
     let panel=box.querySelector('.ap-staff-visit-reward');
     if(panel?.dataset.sig===sig)return;
     panel?.remove();panel=document.createElement('div');panel.className='ap-staff-visit-reward';panel.dataset.sig=sig;
@@ -149,26 +163,28 @@ async function renderStaffReward(){
       <div class="ap-staff-visit-summary">
         <small>VISIT REWARD</small>
         <b>${progress}/5 qualifying visits</b>
-        <span>${available} free Panipuri ${available===1?'plate':'plates'} available</span>
+        <span>This month: ${esc(reward.monthly_item||'Selection pending')}<br>${available} free rewards available<br>${earnedSummary(reward)}</span>
       </div>
       <div class="ap-walkin-box">
         <label>Walk-in purchase</label>
         <div class="ap-walkin-row"><span>£</span><input class="ap-walkin-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Bill total"/><button class="ap-record-walkin" type="button">Record Visit</button></div>
         <small>Purchase must be <b>over £5</b>. Maximum <b>1 qualifying visit per customer per calendar day</b>, including app orders.</small>
       </div>
-      ${available>0?'<button class="ap-redeem-free" type="button">Redeem 1 Free Panipuri</button>':'<em>No free plate ready yet</em>'}
+      ${(reward.earned||[]).map(r=>`<button class="ap-redeem-free" type="button" data-reward-id="${esc(r.reward_id)}" ${r.item_name?'':'disabled'}>Redeem 1 Free ${esc(r.item_name||'reward — selection pending')}</button>`).join('')||'<em>No free reward ready yet</em>'}
     `;
     box.appendChild(panel);
     panel.querySelector('.ap-record-walkin')?.addEventListener('click',()=>recordWalkInVisit(panel));
     panel.querySelector('.ap-walkin-amount')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();recordWalkInVisit(panel)}});
-    panel.querySelector('.ap-redeem-free')?.addEventListener('click',async()=>{
-      if(!confirm('Redeem 1 free Panipuri plate for this customer now?'))return;
-      const btn=panel.querySelector('.ap-redeem-free');btn.disabled=true;btn.textContent='Redeeming…';
-      const {error}=await supabase.rpc('staff_redeem_visit_reward',{target_customer:staffSelectedCustomerId});
-      if(error){toast(error.message||'Could not redeem reward.','error');btn.disabled=false;btn.textContent='Redeem 1 Free Panipuri';return}
-      toast('✅ Free Panipuri reward redeemed.');panel.remove();setTimeout(renderStaffReward,150);
-    });
-  }finally{staffBusy=false}
+    panel.querySelectorAll('.ap-redeem-free').forEach(btn=>btn.addEventListener('click',async()=>{
+      const earned=reward.earned.find(r=>r.reward_id===btn.dataset.rewardId);
+      if(!earned?.item_name||!confirm(`Redeem 1 free ${earned.item_name} for this customer now?`))return;
+      btn.disabled=true;btn.textContent='Redeeming…';
+      try{const {error}=await supabase.rpc('staff_redeem_monthly_visit_reward',{target_customer:customerId,target_reward:earned.reward_id});
+      if(error)throw error;
+      toast(`Free ${earned.item_name} redeemed.`);panel.remove();setTimeout(renderStaffReward,150);
+      }catch(e){toast(e.message||'Could not redeem reward.','error');btn.disabled=false;btn.textContent='Redeem 1 Free '+earned.item_name}
+    }));
+  }catch(e){console.warn('Visit rewards could not load',e?.message)}finally{staffBusy=false}
 }
 
 document.addEventListener('click',e=>{
