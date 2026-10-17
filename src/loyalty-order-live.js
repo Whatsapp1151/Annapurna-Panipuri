@@ -39,7 +39,7 @@ async function refreshAccount(customerId,points){
   try{
     const {data,error}=await supabase.from('loyalty_accounts').select('*').eq('customer_id',customerId).maybeSingle();
     if(error)return;
-    if(data){latestAccount=data;queuePatch()}
+    if(data){latestAccount=data;window.dispatchEvent(new CustomEvent('annapurna:loyalty-updated',{detail:data}));queuePatch()}
     if(points>0)showToast(points);
   }catch{}
 }
