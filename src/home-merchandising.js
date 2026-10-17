@@ -1,3 +1,6 @@
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import {ClipManager} from './behind-scenes';
 import {supabase,configured} from './supabase';
 
 const MAX_BANNERS=3;
@@ -7,6 +10,7 @@ let renderTimer=null;
 let pendingTarget=null;
 let orderChannel=null;
 let bannerTimer=null;
+let clipManagerRoot=null;
 
 const clean=v=>String(v??'').trim();
 const money=n=>'£'+Number(n||0).toFixed(2);
@@ -189,10 +193,10 @@ function renderAdminButton(){
 }
 
 async function openContentManager(){
-  await loadMerchandising();document.querySelector('.ap-content-backdrop')?.remove();
+  await loadMerchandising();clipManagerRoot?.unmount();clipManagerRoot=null;document.querySelector('.ap-content-backdrop')?.remove();
   const wrap=document.createElement('div');wrap.className='ap-content-backdrop';
   wrap.innerHTML='<div class="ap-content-sheet"><button class="ap-content-x" type="button">×</button><div class="ap-content-head"><small>STAFF CONTENT MANAGER</small><h2>Home advertising</h2><p>Manage the banners and Hot Favourites shown to customers.</p></div><div class="ap-content-body"></div></div>';
-  document.body.appendChild(wrap);wrap.querySelector('.ap-content-x').addEventListener('click',()=>wrap.remove());wrap.addEventListener('click',e=>{if(e.target===wrap)wrap.remove()});paintContentManager(wrap);
+  document.body.appendChild(wrap);const close=()=>{clipManagerRoot?.unmount();clipManagerRoot=null;wrap.remove()};wrap.querySelector('.ap-content-x').addEventListener('click',close);wrap.addEventListener('click',e=>{if(e.target===wrap)close()});paintContentManager(wrap);const host=document.createElement('div');wrap.querySelector('.ap-content-sheet').appendChild(host);clipManagerRoot=createRoot(host);clipManagerRoot.render(React.createElement(ClipManager));
 }
 
 function paintContentManager(wrap){
