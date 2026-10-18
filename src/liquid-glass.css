@@ -1,0 +1,33 @@
+/* Liquid glass: opaque defaults, progressive blur only on major surfaces. */
+:root{--glass-surface:#f8faf3;--glass-line:#fff;--glass-shadow:0 12px 32px #23452512,inset 0 1px 0 #fff;--glass-blur:blur(18px) saturate(125%)}
+body{background:#e8eee1}
+.app{background:radial-gradient(ellipse at 100% 0,#dce9cf 0,transparent 48%),radial-gradient(ellipse at 0 45%,#f5e6cc 0,transparent 48%),#f1f5eb;box-shadow:0 0 60px #244d1c12}
+.app>header{background:var(--glass-surface);border-bottom:1px solid #ffffffd9;box-shadow:0 4px 22px #244d1c08;-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+.app>header img{border-radius:50%;background:#fff;object-fit:contain}
+.app>header .brand small{color:#52614c}
+.app .refreshBtn{min-width:44px;min-height:44px;background:#ffffffc9;border-color:#fff;box-shadow:0 3px 12px #244d1c10,inset 0 1px 0 #fff;border-radius:15px}
+.app .hero{background:linear-gradient(135deg,#ffffffed,#e9f1dfdf);color:#173f18;border:1px solid #fff;box-shadow:var(--glass-shadow);padding:26px 22px;border-radius:28px}
+.app .hero .eyebrow{color:#746020;font-size:10px}.app .hero h1{font-size:clamp(28px,6vw,38px);line-height:1.12}.app .hero p{color:#43573e;max-width:55ch}
+.app .primary,.app .benefitAction{background:linear-gradient(160deg,#3e652f,#244d1c);color:#fff;border:1px solid #4d713e;box-shadow:inset 0 1px 0 #ffffff38,0 5px 12px #244d1c18}
+.app .secondary{background:#ffffffc9;border:1px solid #c5d3bb;color:#244d1c;box-shadow:inset 0 1px 0 #fff}
+.app .loyaltyBenefits,.app .rule,.app .pointsCard,.app .qrCard,.app .accountCard,.app .checkoutBox,.app .orderCard,.app .adminOrder,.app .adminBox,.app .popular article,.app .behindScenes{background:var(--glass-surface);border-color:#ffffffed;box-shadow:var(--glass-shadow);border-radius:24px}
+.app .loyaltyBenefits{padding:18px;margin:16px 0}.app .loyaltyBenefits h2{font-size:23px;margin-bottom:14px}.app .benefitGrid>div{background:#ffffffb3;border:1px solid #fff;border-radius:16px}
+.app .pointsCard{color:#173f18;border:1px solid #fff}.app .pointsCard>small{color:#746020}.app .pointsCard .stats div{background:#ffffffb3;border-color:#fff}.app .pointsCard .stats span{color:#52614c}.app .pointsCard>button{background:#e5eddc;color:#244d1c;min-height:44px}.app .pointsCard .loyaltyTrack{background:#d5dfce}.app .pointsCard .loyaltyTrack>span{background:#244d1c}
+.app .homeVisit h2{font-family:Georgia,serif;font-size:21px;margin:0 0 8px;color:#244d1c}.app .homeVisit a{display:inline-flex;align-items:center;min-height:44px;color:#244d1c;font-weight:750;text-underline-offset:4px}.app .homeVisit p{font-size:14px;line-height:1.5}
+.app .ap-hot-card{background:linear-gradient(145deg,#ffffffdf,#edf3e4d9)!important;border-color:#fff!important;box-shadow:var(--glass-shadow)}
+.app .pageHead{padding-top:8px}.app .pageHead h1{font-size:30px}.app .pageHead p{font-size:15px}
+.app .nativeCategories button,.app .filters button,.app .adminTabs button{background:#ffffffc9;border-color:#c5d3bb;box-shadow:inset 0 1px 0 #fff}
+.app .nativeCategories button[aria-pressed=true],.app .filters button.active{background:#244d1c;color:#fff;border-color:#244d1c;box-shadow:inset 0 1px 0 #ffffff30,0 4px 10px #244d1c20}
+.app .nativeMenu .category{padding:16px;background:#ffffffb3;border:1px solid #fff;border-radius:22px;box-shadow:0 6px 20px #244d1c08}.app .category h2{font-size:23px;border-bottom:1px solid #b9c9ad;padding-bottom:12px}.app .nativeMenu .menuRow:last-child{border-bottom:0}.app .nativeMenu .menuRow small{color:#3e692d}.app .menuRewardsHint{background:#e5eddd;border:1px solid #fff}
+.app .orderProgress{background:#edf3e7}.app .orderCard,.app .adminOrder{border-left-width:6px}.app .status-new{border-left-color:#c68b16}.app .status-accepted{border-left-color:#527ca8}.app .status-preparing{border-left-color:#8c5ca9}.app .status-ready{border-left-color:#2f8c36}.app .status-completed{border-left-color:#6a7765}.app .status-cancelled{border-left-color:#a33b3b}
+/* Floating dock keeps all five destinations visible, including iPhone safe areas. */
+.app>nav{bottom:calc(8px + env(safe-area-inset-bottom,0px));width:min(736px,calc(100% - 20px));height:68px;padding:5px;border:1px solid #fff;border-radius:24px;background:var(--glass-surface);box-shadow:0 10px 30px #17301826,inset 0 1px 0 #fff;-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+.app>nav button{border-radius:18px;color:#4e6047;gap:4px;font-size:10px;min-width:0}.app>nav button.active,.app>nav button.ap-orders-active{background:#dce8d1;color:#244d1c;box-shadow:inset 0 1px 0 #fff;font-weight:800}.app>nav button span{max-width:100%;overflow-wrap:anywhere}
+.app .clearerBasket{bottom:calc(88px + env(safe-area-inset-bottom,0px));border-radius:20px;background:linear-gradient(145deg,#365b2a,#244d1c);border:1px solid #719262;box-shadow:0 8px 24px #244d1c30,inset 0 1px 0 #ffffff40;color:#fff}
+.app main{padding-bottom:calc(170px + env(safe-area-inset-bottom,0px))}
+.app .sheet,.ap-mobile-auth .ap-mobile-sheet{background:#f8faf3;border:1px solid #fff;box-shadow:0 -8px 40px #17301820;border-radius:28px 28px 20px 20px}
+.app input,.app select,.app textarea{background:#fff}.app .qrCard img{background:#fff;padding:8px;border-radius:12px}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){:root{--glass-surface:#ffffffb8}.app .hero,.app .loyaltyBenefits,.app .pointsCard,.app .homeVisit{-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}}
+@media(max-width:380px){.app>header{padding:9px 10px;gap:8px}.app>header .brand b{font-size:16px}.app>header img{width:42px;height:42px}.app .hero{padding:22px 18px}.app .nativeMenu .category{padding:12px}.app>nav{width:calc(100% - 12px)}.app>nav button{font-size:9px}.app .benefitGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.app .benefitGrid>div{padding:10px}.app .benefitGrid strong{font-size:16px}}
+@media(prefers-reduced-transparency:reduce){:root{--glass-surface:#f8faf3}.app>header,.app>nav,.app .hero,.app .loyaltyBenefits,.app .pointsCard,.app .homeVisit{-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media(forced-colors:active){.app>nav,.app .hero,.app .loyaltyBenefits,.app .nativeMenu .category{border:1px solid CanvasText}.app>nav button.active,.app .nativeCategories button[aria-pressed=true]{outline:2px solid Highlight}}

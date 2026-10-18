@@ -7,6 +7,7 @@ import {supabase,configured} from './supabase';
 import './styles.css';
 import {LoyaltyBenefits,OrderProgress,MotionValue,LoyaltyProgress} from './customer-experience';
 import {renderAdminGrowth} from './commerce-growth';
+import './liquid-glass.css';
 const orderCutoff=()=>new Date(Date.now()-7*24*60*60*1000).toISOString();
 function OrderPlaced({at}){const d=new Date(at);return <div className="orderPlaced"><span>Date: <b>{d.toLocaleDateString('en-GB',{timeZone:'Europe/London',day:'2-digit',month:'short',year:'numeric'})}</b></span><span>Time: <b>{d.toLocaleTimeString('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false})}</b></span></div>}
 
