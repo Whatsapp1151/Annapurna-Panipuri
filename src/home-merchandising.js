@@ -122,7 +122,8 @@ function renderHomeBanners(){
   if(wrap?.dataset.sig===sig)return;
   wrap?.remove();wrap=document.createElement('section');wrap.className='ap-home-banners';wrap.dataset.sig=sig;
   wrap.innerHTML=`<div class="ap-banner-topline"><span>WHAT'S ON</span><b>Discover something delicious</b></div><div class="ap-banner-track">${active.map((b,i)=>`<article class="ap-banner ap-banner-${i%3}" data-banner-id="${b.id}"><div class="ap-banner-deco" aria-hidden="true"></div><small>ANNAPURNA • FEATURED</small><h2>${esc(b.title)}</h2>${b.subtitle?`<p>${esc(b.subtitle)}</p>`:''}<button type="button" data-banner-cta="${b.id}">${esc(b.cta_label||'Explore menu')} <span>→</span></button></article>`).join('')}</div>${active.length>1?`<div class="ap-banner-dots">${active.map((_,i)=>`<i class="${i===0?'active':''}"></i>`).join('')}</div>`:''}`;
-  hero.insertAdjacentElement('afterend',wrap);
+  const offerSlot=document.querySelector('.glassOffersSlot');
+  if(offerSlot)offerSlot.append(wrap);else hero.insertAdjacentElement('afterend',wrap);
   active.forEach(b=>wrap.querySelector(`[data-banner-cta="${b.id}"]`)?.addEventListener('click',()=>openTarget(b.target_type,b.target_value)));
   startBannerRotation(wrap,active.length);
 }
@@ -145,7 +146,8 @@ function renderHotFavourites(){
   const old=popularSection.querySelector('.popular');if(!old)return;
   const sig=favourites.map(x=>[x.id,x.menu_items?.name,x.menu_items?.price].join(':')).join('|');
   if(old.dataset.sig===sig)return;old.dataset.sig=sig;old.classList.add('ap-hot-grid');
-  if(!favourites.length){old.innerHTML='<div class="ap-hot-empty">Staff favourites will appear here soon.</div>';return}
+  popularSection.hidden=!favourites.length;
+  if(!favourites.length)return;
   old.innerHTML=favourites.map((f,i)=>{const m=f.menu_items;return `<article class="ap-hot-card" data-hot-id="${m.id}"><div class="ap-hot-flame">${i===0?'🔥':'★'}</div><small>${esc(m.category)}</small><b>${esc(m.name)}</b><div class="ap-hot-bottom"><strong>${Number(m.price)===0?'FREE':money(m.price)}</strong><button type="button" aria-label="View ${esc(m.name)}">View →</button></div></article>`}).join('');
   favourites.forEach(f=>old.querySelector(`[data-hot-id="${f.menu_items.id}"] button`)?.addEventListener('click',()=>openTarget('ITEM',f.menu_items.id)));
 }
