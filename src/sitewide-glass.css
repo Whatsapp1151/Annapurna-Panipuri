@@ -33,8 +33,8 @@ body{background:#e8ecdd}
 .app :is(.nativeCategories button[aria-pressed=true],.filters button.active,.adminTabs button[aria-pressed=true]){background:linear-gradient(145deg,#326a3b,#173f24);color:#fff;border-color:#52794e}
 .app .clearerBasket{background:linear-gradient(135deg,#315b31ed,#173f24ed);border:1px solid #8ba778;box-shadow:var(--lg-shadow),0 10px 25px #17301828;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur)}
 /* Dialogs injected outside .app also share the same surface. */
-.app .sheet,body :is(.ap-mobile-sheet,.ap-profile-sheet,.ap-customer-log,.ap-qr-sheet,.ap-dietary-sheet){background:var(--lg-sheet);border:1px solid var(--lg-edge);box-shadow:inset 0 1px 2px #fff,0 18px 60px #17301838;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);color:#17391e}
-.app .modal,body :is(.ap-profile-backdrop,.ap-customer-log-backdrop,.ap-qr-backdrop,.ap-dietary-modal){background:#172b225e}
+.app .sheet,.ap-mobile-auth .ap-mobile-sheet,body :is(.ap-profile-sheet,.ap-customer-log,.ap-qr-sheet,.ap-dietary-sheet){background:var(--lg-sheet);border:1px solid var(--lg-edge);box-shadow:inset 0 1px 2px #fff,0 18px 60px #17301838;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);color:#17391e}
+.app .modal,body :is(.ap-mobile-auth,.ap-profile-backdrop,.ap-customer-log-backdrop,.ap-qr-backdrop,.ap-dietary-modal){background:#172b225e}
 .app :is(input:not([type=checkbox]):not([type=radio]),select,textarea),body :is(.ap-profile-sheet,.ap-customer-log,.ap-qr-sheet,.ap-dietary-sheet,.ap-mobile-sheet) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){background:#fffdf6ed;border:1px solid #aebb9e;color:#17391e;box-shadow:inset 0 2px 4px #53604209}
 .app input::placeholder,.app textarea::placeholder{color:#64715c;opacity:1}
 .app :is(button,a,input,select,textarea,summary):focus-visible,body :is(.ap-profile-sheet,.ap-customer-log,.ap-qr-sheet,.ap-dietary-sheet,.ap-mobile-sheet) :focus-visible{outline:3px solid #315f29;outline-offset:3px}
