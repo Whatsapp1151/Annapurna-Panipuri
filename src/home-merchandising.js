@@ -1,4 +1,5 @@
 import React from 'react';
+import {menuImage} from './menu-images';
 import {createRoot} from 'react-dom/client';
 import {ClipManager} from './behind-scenes';
 import {supabase,configured} from './supabase';
@@ -148,7 +149,7 @@ function renderHotFavourites(){
   if(old.dataset.sig===sig)return;old.dataset.sig=sig;old.classList.add('ap-hot-grid');
   popularSection.hidden=!favourites.length;
   if(!favourites.length)return;
-  old.innerHTML=favourites.map((f,i)=>{const m=f.menu_items;return `<article class="ap-hot-card" data-hot-id="${m.id}"><div class="ap-hot-flame">${i===0?'🔥':'★'}</div><small>${esc(m.category)}</small><b>${esc(m.name)}</b><div class="ap-hot-bottom"><strong>${Number(m.price)===0?'FREE':money(m.price)}</strong><button type="button" aria-label="View ${esc(m.name)}">View →</button></div></article>`}).join('');
+  old.innerHTML=favourites.map((f,i)=>{const m=f.menu_items;return `<article class="ap-hot-card" data-hot-id="${m.id}">${menuImage(m.id)?`<img class="hotItemPhoto" src="${menuImage(m.id)}" alt="Illustrative ${esc(m.name)}" loading="lazy" decoding="async" width="320" height="200"/>`:`<div class="ap-hot-flame">${i===0?'🔥':'★'}</div>`}<small>${esc(m.category)}</small><b>${esc(m.name)}</b><div class="ap-hot-bottom"><strong>${Number(m.price)===0?'FREE':money(m.price)}</strong><button type="button" aria-label="View ${esc(m.name)}">View →</button></div></article>`}).join('');
   favourites.forEach(f=>old.querySelector(`[data-hot-id="${f.menu_items.id}"] button`)?.addEventListener('click',()=>openTarget('ITEM',f.menu_items.id)));
 }
 

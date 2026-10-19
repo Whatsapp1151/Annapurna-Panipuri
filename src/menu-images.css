@@ -1,0 +1,10 @@
+/* Small food thumbnails preserve scan speed and space for basket controls. */
+.app .nativeMenu .menuItemInfo{display:flex;flex-direction:row;align-items:center;gap:12px;flex:1;min-width:0}
+.app .nativeMenu .menuItemPhoto{display:block;width:80px;height:80px;flex:0 0 80px;object-fit:cover;border-radius:15px;background:#efe9d9;border:1px solid #fff;box-shadow:0 3px 10px #244d1c12}
+.app .nativeMenu .menuItemPhoto[hidden]{display:none}
+.app .nativeMenu .menuItemText{display:flex;flex-direction:column;min-width:0;gap:3px}
+.app .nativeMenu .menuItemText b{font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.app .nativeMenu .menuImageDisclaimer{font-size:12px;margin-top:8px;color:#52614c}
+.app .hotItemPhoto{width:100%;height:120px;object-fit:cover;border-radius:13px;background:#efe9d9}
+@media(max-width:600px){.app .nativeMenu .menuRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 10px;align-items:center}.app .nativeMenu .menuItemInfo{grid-column:1;grid-row:1 / span 2;gap:9px}.app .nativeMenu .menuRow>strong{grid-column:2;grid-row:1;text-align:right}.app .nativeMenu .menuRow>.addBtn,.app .nativeMenu .menuRow>.qty{grid-column:2;grid-row:2;justify-self:end}.app .nativeMenu .menuItemPhoto{width:68px;height:76px;flex-basis:68px}.app .nativeMenu .qty{display:flex;flex-direction:row;gap:5px}.app .nativeMenu .qty button{min-width:36px;width:36px;min-height:44px}}
+@media(max-width:360px){.app .nativeMenu .menuItemPhoto{width:52px;height:66px;flex-basis:52px}.app .nativeMenu .menuItemInfo{gap:7px}.app .nativeMenu .menuItemText b{font-size:14px}.app .nativeMenu .qty{gap:3px}.app .nativeMenu .qty span{min-width:14px}}
