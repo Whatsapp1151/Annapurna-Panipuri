@@ -1,0 +1,50 @@
+/* Shared cream-and-sage glass treatment across customer and staff views.
+   Blur stays on large surfaces, never individual menu/transaction rows. */
+:root{
+  --lg-panel:#f8f8ef;
+  --lg-sheet:#faf9f1;
+  --lg-inset:#f1f3e7;
+  --lg-edge:#ffffffeb;
+  --lg-shadow:inset 0 1px 2px #fff, inset 0 -1px 1px #81926820,0 9px 24px #4a51201c;
+  --lg-blur:none;
+}
+body{background:#e8ecdd}
+.app,.app:has(.glassHome){background:radial-gradient(ellipse at 80% 12%,#aab48188,transparent 34%),radial-gradient(ellipse at 0 47%,#d7bb6870,transparent 28%),radial-gradient(ellipse at 95% 78%,#82925c66,transparent 27%),linear-gradient(125deg,#fbf5e5,#edeedc 55%,#fff7e7);color:#17391e}
+.app>header,.app:has(.glassHome)>header{background:var(--lg-panel);border-bottom:1px solid var(--lg-edge);box-shadow:0 4px 18px #4a51200a;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur)}
+.app>header .brand b,.app:has(.glassHome)>header .brand b{color:#12351b}
+.app>header img,.app:has(.glassHome)>header img{border-radius:0;background:transparent}
+.app>nav,.app:has(.glassHome)>nav{background:var(--lg-panel);border:1.5px solid var(--lg-edge);border-radius:38px;height:70px;box-shadow:var(--lg-shadow),0 10px 25px #17301820;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur)}
+.app>nav button,.app:has(.glassHome)>nav button{border-radius:32px}
+.app>nav button.active,.app>nav button.ap-orders-active,.app:has(.glassHome)>nav button.active{background:linear-gradient(140deg,#326a3b,#123d24);color:#fff;border:1px solid #588358;box-shadow:0 3px 12px #17301828,inset 0 1px 0 #ffffff50}
+.app :is(.qrCard,.accountCard,.checkoutBox,.adminBox,.orderCard,.adminOrder,.loyaltyBenefits,.pointsCard,.rule,.behindScenes,.join,.historyList,.menuEmpty,.profile-address-card,.ap-visit-reward-card,.ap-growth-card,.ap-growth-part,.ap-analytics-lists>div,.ap-customer-card),
+.app .nativeMenu .category{
+  background:var(--lg-panel);border:1px solid var(--lg-edge);border-radius:24px;box-shadow:var(--lg-shadow);
+  -webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);
+}
+.app .join{padding:28px 20px;margin-top:12px}.app .join h1{font-size:28px}.app .join p{color:#43573e;line-height:1.5}
+.app .historyList{padding:6px 16px}.app .historyList article:last-child{border-bottom:0}
+.app :is(.accountActions>button,.accountActions details,.empty,.menuRewardsHint,.orderProgress,.orderPlaced,.orderMeta span,.ap-order-growth-detail,.ap-staff-visit-reward,.ap-walkin-box,.benefitGrid>div,.pointsCard .stats div,.ap-check-grid label){background:var(--lg-inset);border:1px solid var(--lg-edge);box-shadow:inset 0 1px 1px #fff;border-radius:15px;color:#294629}
+.app :is(.accountCard,.profile-address-card,.ap-growth-card,.adminBox) small{color:#52614c}
+.app :is(.customer,.ap-manager-item){background:transparent}
+.app .ap-metric-grid article{background:var(--lg-panel);border:1px solid var(--lg-edge);box-shadow:var(--lg-shadow);color:#17391e;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur)}
+.app .ap-metric-grid :is(small,span){color:#43573e;opacity:1}
+.app :is(.primary,.benefitAction,.addBtn,.adminAlert){background:linear-gradient(145deg,#326a3b,#173f24);color:#fff;border:1px solid #52794e;box-shadow:inset 0 1px 0 #ffffff50,0 4px 12px #244d1c20}
+.app :is(.secondary,.nativeCategories button,.filters button,.adminTabs button,.qty button,.ap-growth-refresh,.ap-order-again){background:var(--lg-inset);border:1px solid #bbc9ac;color:#244d1c;box-shadow:inset 0 1px 1px #fff}
+.app :is(.nativeCategories button[aria-pressed=true],.filters button.active,.adminTabs button[aria-pressed=true]){background:linear-gradient(145deg,#326a3b,#173f24);color:#fff;border-color:#52794e}
+.app .clearerBasket{background:linear-gradient(135deg,#315b31ed,#173f24ed);border:1px solid #8ba778;box-shadow:var(--lg-shadow),0 10px 25px #17301828;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur)}
+/* Dialogs injected outside .app also share the same surface. */
+.app .sheet,body :is(.ap-mobile-sheet,.ap-profile-sheet,.ap-customer-log,.ap-qr-sheet,.ap-dietary-sheet){background:var(--lg-sheet);border:1px solid var(--lg-edge);box-shadow:inset 0 1px 2px #fff,0 18px 60px #17301838;-webkit-backdrop-filter:var(--lg-blur);backdrop-filter:var(--lg-blur);color:#17391e}
+.app .modal,body :is(.ap-profile-backdrop,.ap-customer-log-backdrop,.ap-qr-backdrop,.ap-dietary-modal){background:#172b225e}
+.app :is(input:not([type=checkbox]):not([type=radio]),select,textarea),body :is(.ap-profile-sheet,.ap-customer-log,.ap-qr-sheet,.ap-dietary-sheet,.ap-mobile-sheet) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){background:#fffdf6ed;border:1px solid #aebb9e;color:#17391e;box-shadow:inset 0 2px 4px #53604209}
+.app input::placeholder,.app textarea::placeholder{color:#64715c;opacity:1}
+.app :is(button,a,input,select,textarea,summary):focus-visible,body :is(.ap-profile-sheet,.ap-customer-log,.ap-qr-sheet,.ap-dietary-sheet,.ap-mobile-sheet) :focus-visible{outline:3px solid #315f29;outline-offset:3px}
+.app :is(input,textarea)[aria-invalid=true]{border:2px solid #9b2525}
+.app .choice{background:var(--lg-inset)}.app .choice.selected{background:#e2ecd7;border:2px solid #52794e}
+.app :is(.locationBox,.alertButton:not(.adminAlert),.ap-allergen-note){background:#fff4d9e8;border:1px solid #cfb76d;box-shadow:inset 0 1px 0 #fff}
+.app .qrCard img{background:#fff;opacity:1;padding:8px}
+.app .nativeMenu .soldOutButton{background:#fff0e8;color:#8b3418;border:1px solid #b87056;box-shadow:none}
+.app :is(.orderCard,.adminOrder){border-left-width:6px}
+.app .status-new{border-left-color:#c68b16}.app .status-accepted{border-left-color:#527ca8}.app .status-preparing{border-left-color:#8c5ca9}.app .status-ready{border-left-color:#2f8c36}.app .status-completed{border-left-color:#6a7765}.app .status-cancelled{border-left-color:#a33b3b}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){:root{--lg-panel:linear-gradient(135deg,#ffffffc9,#fffdf58c);--lg-sheet:linear-gradient(135deg,#fffffff2,#f8f7eced);--lg-inset:linear-gradient(135deg,#ffffffa6,#f0f2e4b8);--lg-blur:blur(16px) saturate(120%)}}
+@media(prefers-reduced-transparency:reduce){:root{--lg-panel:#f8f8ef;--lg-sheet:#faf9f1;--lg-inset:#f1f3e7;--lg-blur:none}.app .clearerBasket{background:#173f24}.app .glassHero .secondary{-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media(forced-colors:active){.app :is(.qrCard,.accountCard,.checkoutBox,.adminBox,.orderCard,.adminOrder,.join,.historyList,.nativeMenu .category),body :is(.ap-profile-sheet,.ap-customer-log,.ap-qr-sheet,.ap-dietary-sheet){background:Canvas;border-color:CanvasText;box-shadow:none}.app>nav button.active{outline:2px solid Highlight}.app :focus-visible{outline-color:Highlight}}

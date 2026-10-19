@@ -11,6 +11,7 @@ import './liquid-glass.css';
 import {GlassHome} from './glass-home';
 import {menuImage} from './menu-images';
 import './menu-images.css';
+import './sitewide-glass.css';
 const orderCutoff=()=>new Date(Date.now()-7*24*60*60*1000).toISOString();
 function OrderPlaced({at}){const d=new Date(at);return <div className="orderPlaced"><span>Date: <b>{d.toLocaleDateString('en-GB',{timeZone:'Europe/London',day:'2-digit',month:'short',year:'numeric'})}</b></span><span>Time: <b>{d.toLocaleTimeString('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false})}</b></span></div>}
 
