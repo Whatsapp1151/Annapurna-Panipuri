@@ -1,0 +1,6 @@
+.loyaltyWallet{margin:20px auto 0;text-align:center;max-width:360px}
+.loyaltyWallet .loyaltyWalletButton{display:block;margin:auto;min-height:48px;padding:13px 22px;border:1px solid #777;border-radius:10px;background:#111;color:#fff;font:600 16px/1.3 system-ui;cursor:pointer;box-shadow:none}
+.loyaltyWallet .loyaltyWalletButton:focus-visible{outline:3px solid #ba8b24;outline-offset:4px}
+.loyaltyWallet .loyaltyWalletButton:disabled{opacity:.65;cursor:wait}
+.loyaltyWallet p{font-size:13px;line-height:1.5;margin:9px 0;color:#42533f}
+.loyaltyWallet p:empty{display:none}
