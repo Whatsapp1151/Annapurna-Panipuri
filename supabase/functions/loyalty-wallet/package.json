@@ -1,0 +1,1 @@
+{"name":"annapurna-loyalty-wallet","private":true,"type":"module","dependencies":{"@supabase/supabase-js":"2.118.0","jose":"6.2.13","passkit-generator":"3.7.0"},"devDependencies":{"@types/node":"26.6.5"}}

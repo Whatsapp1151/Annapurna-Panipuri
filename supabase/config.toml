@@ -1,0 +1,4 @@
+[functions.loyalty-wallet]
+# Safari posts its bearer token in a form body to download a real pkpass response.
+# index.ts validates every pass request with Supabase Auth before any account lookup.
+verify_jwt = false
