@@ -1,0 +1,71 @@
+// Browser tests with synthetic data. Never signs in to or writes to production.
+import assert from 'node:assert/strict';
+import {createServer} from 'vite';
+import {TOPPINGS} from '../src/pizza-options.js';
+const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
+process.env.VITE_SUPABASE_URL='https://orderingtest.supabase.co';process.env.VITE_SUPABASE_ANON_KEY='test-anon-key';
+const server=await createServer({root:new URL('../',import.meta.url).pathname,server:{host:'127.0.0.1',port:4173},logLevel:'error'});await server.listen();
+const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||chromium.executablePath(),args:['--no-sandbox']});
+const base='http://127.0.0.1:4173';
+const menu=[{id:'pizza1',name:'Paneer Tikka Pizza',category:'Pizza',price:7,listed:true,available:true,vegetarian:true,sort_order:1},{id:'khakhra1',name:'Regular Pizza (Old topping list)',category:'Pizza Khakhra',price:5,listed:true,available:true,vegetarian:true,sort_order:2},{id:'tea1',name:'Tea',category:'Drinks',price:1,listed:true,available:true,sort_order:3}];
+const id='00000000-0000-0000-0000-000000000002';
+const profile={customer_id:'customer1',auth_user_id:id,full_name:'Test Customer',email:'test@example.invalid',mobile_number:'+447000000000',mobile_verified_at:'2026-01-01T00:00:00Z',qr_token:'test-qr'};
+const session={access_token:'test-access-token',refresh_token:'test-refresh-token',token_type:'bearer',expires_at:Math.floor(Date.now()/1000)+86400,user:{id,email:profile.email,aud:'authenticated',app_metadata:{provider:'email'},user_metadata:{}}};
+let closed=false,role='CUSTOMER';
+const status=()=>({is_open:!closed,closed_early:closed,ordering_enabled:true,opens_at:'10:00',closes_at:'22:00',timezone:'Europe/London',next_open_at:'2026-10-26T10:00:00Z'});
+const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+await context.addInitScript(s=>localStorage.setItem('sb-orderingtest-auth-token',JSON.stringify(s)),session);
+await context.route('https://orderingtest.supabase.co/**',async route=>{
+ const req=route.request(),url=new URL(req.url()),path=url.pathname;
+ let value=[];
+ if(path.endsWith('/rpc/shop_ordering_status'))value=status();
+ else if(path.endsWith('/rpc/set_shop_closed_early')){closed=JSON.parse(req.postData()).close_early;value=status()}
+ else if(path.includes('/rpc/'))value={};
+ else if(path.endsWith('/user_roles'))value=[{role}];
+ else if(path.endsWith('/customer_profiles'))value=[profile];
+ else if(path.endsWith('/menu_items'))value=menu;
+ else if(path.endsWith('/loyalty_accounts'))value=[{customer_id:'customer1',points_balance:5}];
+ else if(path.endsWith('/visit_rewards'))value=[{qualifying_visits:1,free_panipuri_available:0}];
+ else if(path.includes('/auth/'))value={user:session.user};
+ if(req.headers().accept?.includes('application/vnd.pgrst.object+json')&&Array.isArray(value))value=value[0]||{};
+ await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(value)});
+});
+const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+try{
+ await page.goto(base);await page.locator('nav button').filter({hasText:'Menu'}).click();
+ await page.getByRole('button',{name:'Choose toppings',exact:true}).first().click();
+ assert.equal(await page.locator('dialog[open]').count(),1);
+ for(const t of TOPPINGS.slice(0,5))await page.getByRole('checkbox',{name:t,exact:true}).check();
+ assert.match(await page.locator('.toppingsSummary').innerText(),/No extra charge/);
+ await page.getByRole('checkbox',{name:'Jalapenos',exact:true}).check();
+ assert.match(await page.locator('.toppingsSummary').innerText(),/£0.60/);
+ await page.screenshot({path:'/tmp/pwa-toppings-mobile.png'});
+ await page.locator('dialog').getByRole('button',{name:'Add to basket · £7.60',exact:true}).click();
+ await page.getByRole('button',{name:'Choose toppings',exact:true}).first().click();
+ await page.getByRole('checkbox',{name:'Onion',exact:true}).check();
+ await page.locator('dialog').getByRole('button',{name:'Add to basket · £7.00',exact:true}).click();
+ await page.locator('.cartFloat').click();
+ await page.locator('.checkoutBox').waitFor();assert.equal(await page.locator('.checkoutLine').count(),2);
+ assert.equal(await page.locator('.checkoutTotal strong').innerText(),'£14.60');
+ await page.getByRole('radio',{name:'Takeaway (+£0.50 per order)',exact:true}).check();
+ assert.equal(await page.locator('.checkoutTotal strong').innerText(),'£15.10');
+ await page.getByRole('radio',{name:'Eating Here (no charge)',exact:true}).check();
+ assert.equal(await page.locator('.checkoutTotal strong').innerText(),'£14.60');
+ await page.screenshot({path:'/tmp/pwa-basket-mobile.png',fullPage:true});
+ assert.equal(await page.locator('.restaurantControl').count(),0);
+ closed=true;await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await page.getByText('Restaurant closed early today',{exact:true}).waitFor();
+ assert.equal(await page.locator('.placeOrder').isDisabled(),true);
+ closed=false;role='ADMIN';await page.reload();await page.locator('.staffPill').click();
+ await page.getByRole('button',{name:'Close early today',exact:true}).waitFor();
+ page.on('dialog',d=>d.accept());
+ await page.getByRole('button',{name:'Close early today',exact:true}).click();
+ await page.getByRole('button',{name:'Undo early closure',exact:true}).waitFor();
+ assert.equal(closed,true);await page.screenshot({path:'/tmp/pwa-admin-close-mobile.png',fullPage:true});
+ await page.getByRole('button',{name:'Undo early closure',exact:true}).click();
+ await page.getByRole('button',{name:'Close early today',exact:true}).waitFor();assert.equal(closed,false);
+ const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);assert.equal(overflow,false);
+ console.log('PASS: mobile toppings, variants, fee toggle, closure block, admin close/undo; browser errors:',errors);
+ assert.deepEqual(errors,[]);
+}catch(e){await page.screenshot({path:'/tmp/pwa-ui-failure.png',fullPage:true});console.error('UI failure:',e.message);console.error((await page.locator('body').innerText()).slice(0,3500));process.exitCode=1}
+finally{await browser.close();await server.close()}

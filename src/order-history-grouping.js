@@ -37,8 +37,8 @@ function combinedItems(group){
   const map=new Map();
   for(const o of group){
     for(const i of o.order_items||[]){
-      const key=[i.menu_item_id||'',i.item_name,Number(i.unit_price||0),i.item_notes||''].join('|');
-      const old=map.get(key)||{item_name:i.item_name,quantity:0,line_total:0};
+      const key=[i.menu_item_id||'',i.item_name,Number(i.unit_price||0),i.item_notes||'',JSON.stringify(i.toppings)].join('|');
+      const old=map.get(key)||{item_name:i.item_name,toppings:i.toppings,toppings_extra:i.toppings_extra,quantity:0,line_total:0};
       old.quantity+=Number(i.quantity||0);
       old.line_total+=Number(i.line_total||0);
       map.set(key,old);
@@ -59,10 +59,17 @@ function addNote(card,group){
 function paintItems(card,group){
   const box=card.querySelector('.orderItems');if(!box)return;
   const items=combinedItems(group);
-  const sig=items.map(i=>`${i.item_name}:${i.quantity}:${i.line_total}`).join('|');
+  const sig=items.map(i=>`${i.item_name}:${i.quantity}:${i.line_total}:${JSON.stringify(i.toppings)}`).join('|');
   if(box.dataset.apCombinedSig===sig)return;
   box.dataset.apCombinedSig=sig;
-  box.innerHTML=items.map(i=>`<div><span>${i.quantity} × ${escapeHtml(i.item_name)}</span><b>${money(i.line_total)}</b></div>`).join('');
+  box.innerHTML=items.map(i=>`<div><span>${i.quantity} × ${escapeHtml(i.item_name)}${Array.isArray(i.toppings)?`<small class="toppingDetails">${i.toppings.length?"Toppings: "+escapeHtml(i.toppings.join(", ")):"No extra toppings"}${Number(i.toppings_extra)>0?" · +"+money(i.toppings_extra)+" per pizza":""}</small>`:""}</span><b>${money(i.line_total)}</b></div>`).join('');
+}
+
+function paintBill(card,group){
+ const bill=card.querySelector('.orderBill');if(!bill)return;
+ const food=group.reduce((n,o)=>n+Number(o.subtotal||0),0),discount=group.reduce((n,o)=>n+Number(o.discount_amount||0),0),fee=group.reduce((n,o)=>n+Number(o.takeaway_charge||0),0);
+ const html=`<div><span>Food subtotal</span><b>${money(food)}</b></div>${discount?`<div><span>Discount</span><b>−${money(discount)}</b></div>`:''}<div><span>Takeaway charge</span><b>${money(fee)}</b></div>`;
+ if(bill.innerHTML!==html)bill.innerHTML=html;
 }
 
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -84,6 +91,7 @@ function applyCustomer(groups){
     card.dataset.apCombinedGroup=group.map(o=>o.order_id).join('|');
     addNote(card,group);
     paintItems(card,group);
+    paintBill(card,group);
     const total=group.reduce((s,o)=>s+Number(o.total||0),0);
     setText(card.querySelector('.orderTotal b'),money(total));
     setText(card.querySelector('.orderedAt'),`Combined ${group.length} orders placed together • ${new Date(primary.created_at).toLocaleString('en-GB')}`);
@@ -103,6 +111,7 @@ function applyAdmin(groups){
     const card=cards.get(Number(primary.order_number));if(!card)continue;
     addNote(card,group);
     paintItems(card,group);
+    paintBill(card,group);
     const total=group.reduce((s,o)=>s+Number(o.total||0),0);
     const pay=[...card.querySelectorAll('.orderMeta span')].find(x=>clean(x.textContent).startsWith('💷'));
     setText(pay,`💷 ${money(total)} • Pay at collection`);
@@ -127,11 +136,11 @@ async function run(){
       supabase.from('user_roles').select('role').eq('auth_user_id',session.user.id).maybeSingle()
     ]);
     if(customerView&&profile?.customer_id){
-      const {data}=await supabase.from('orders').select('order_id,order_number,customer_id,status,total,created_at,completed_at,order_items(order_item_id,menu_item_id,item_name,unit_price,quantity,line_total,item_notes)').eq('customer_id',profile.customer_id).gte('created_at',new Date(Date.now()-7*86400000).toISOString()).order('created_at',{ascending:false});
+      const {data}=await supabase.from('orders').select('order_id,order_number,customer_id,status,total,subtotal,discount_amount,takeaway_charge,created_at,completed_at,order_items(order_item_id,menu_item_id,item_name,unit_price,quantity,line_total,item_notes,toppings,toppings_extra)').eq('customer_id',profile.customer_id).gte('created_at',new Date(Date.now()-7*86400000).toISOString()).order('created_at',{ascending:false});
       applyCustomer(groupBursts(data||[]));
     }
     if(adminView&&['STAFF','ADMIN'].includes(roleRow?.role)){
-      const {data}=await supabase.from('orders').select('order_id,order_number,customer_id,status,total,created_at,completed_at,order_items(order_item_id,menu_item_id,item_name,unit_price,quantity,line_total,item_notes)').gte('created_at',new Date(Date.now()-7*86400000).toISOString()).order('created_at',{ascending:false});
+      const {data}=await supabase.from('orders').select('order_id,order_number,customer_id,status,total,subtotal,discount_amount,takeaway_charge,created_at,completed_at,order_items(order_item_id,menu_item_id,item_name,unit_price,quantity,line_total,item_notes,toppings,toppings_extra)').gte('created_at',new Date(Date.now()-7*86400000).toISOString()).order('created_at',{ascending:false});
       applyAdmin(groupBursts(data||[]));
     }
   }catch(e){console.warn('Order grouping skipped',e)}finally{running=false}

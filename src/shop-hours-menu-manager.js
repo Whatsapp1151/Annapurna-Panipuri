@@ -54,40 +54,6 @@ function scheduleCustomerMenuRefresh(message='🍽 Menu stock has just changed. 
   setTimeout(()=>location.reload(),450);
 }
 
-async function refreshShopStatus(){
-  if(!configured)return;
-  const {data,error}=await supabase.rpc('shop_ordering_status');
-  if(!error&&data)shopStatus=data;
-  renderHoursBanner();
-}
-
-function renderHoursBanner(){
-  const main=document.querySelector('main');
-  if(!main)return;
-  let banner=document.querySelector('.ap-shop-hours-banner');
-  if(shopStatus?.is_open){banner?.remove();return}
-  if(!banner){
-    banner=document.createElement('div');
-    banner.className='ap-shop-hours-banner';
-    main.prepend(banner);
-  }
-  banner.innerHTML='<b>🕙 Online ordering is closed</b><span>You can browse the menu now. Orders can be placed daily from <strong>10:00 AM to 10:00 PM</strong>.</span>';
-}
-
-function blockClosedOrdering(e){
-  if(shopStatus?.is_open)return;
-  const btn=e.target.closest?.('button');
-  if(!btn)return;
-  const text=(btn.textContent||'').trim();
-  if(/Place Order|Verify OTP & Place Order/i.test(text)){
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    localNotice('🕙 Online ordering is open daily from 10:00 AM to 10:00 PM. You can keep browsing the menu.');
-  }
-}
-
-document.addEventListener('click',blockClosedOrdering,true);
-
 async function fetchMenu(){
   const {data,error}=await supabase.from('menu_items').select('*').order('category').order('sort_order').order('name');
   if(error)throw error;
@@ -212,7 +178,7 @@ function filterSoldOut(wrap,value){const q=String(value||'').toLowerCase().trim(
 let mutationTimer;
 const observer=new MutationObserver(()=>{
   clearTimeout(mutationTimer);
-  mutationTimer=setTimeout(()=>{renderHoursBanner();maybeEnhanceAdmin();renderSoldOut()},120);
+  mutationTimer=setTimeout(()=>{maybeEnhanceAdmin();renderSoldOut()},120);
 });
 observer.observe(document.documentElement,{subtree:true,childList:true});
 
@@ -240,12 +206,10 @@ async function initRealtime(){
 
 (async()=>{
   await loadRole();
-  await refreshShopStatus();
   restoreCustomerTab();
   await maybeEnhanceAdmin();
   await renderSoldOut();
   await initRealtime();
   await pollMenuChanges();
-  setInterval(refreshShopStatus,60000);
   setInterval(pollMenuChanges,15000);
 })();

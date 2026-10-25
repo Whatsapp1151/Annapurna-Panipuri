@@ -50,15 +50,16 @@ async function loadRole(){
 
 async function applyPromo(panel){
   const input=panel.querySelector('[name=promo]');const code=String(input?.value||'').trim().toUpperCase();
-  if(!code){growth.promoCode='';growth.promoPreview=null;panel.querySelector('.ap-promo-result').innerHTML='';return}
-  const section=panel.closest('section');const subtotal=parseMoney(section?.querySelector('.checkoutTotal strong')?.textContent);
+  if(!code){growth.promoCode='';growth.promoPreview=null;window.dispatchEvent(new CustomEvent('annapurna:promo-preview',{detail:null}));panel.querySelector('.ap-promo-result').innerHTML='';return}
+  const section=panel.closest('section');const subtotal=Number(section?.querySelector('.checkoutBox')?.dataset.foodSubtotal)||0;
   const btn=panel.querySelector('.ap-apply-promo');btn.disabled=true;btn.textContent='Checking…';
   const {data,error}=await nativeRpc('preview_promotion',{promo_code:code,cart_subtotal:subtotal});
   btn.disabled=false;btn.textContent='Apply';
   const result=panel.querySelector('.ap-promo-result');
-  if(error){growth.promoPreview=null;result.innerHTML=`<span class="bad">${esc(error.message)}</span>`;return}
+  if(error){growth.promoPreview=null;window.dispatchEvent(new CustomEvent('annapurna:promo-preview',{detail:null}));result.innerHTML=`<span class="bad">${esc(error.message)}</span>`;return}
   growth.promoCode=code;growth.promoPreview=data;
-  result.innerHTML=`<b>✓ ${esc(data.title)}</b><span>${esc(data.code)} saves ${money(data.discount_amount)} • New total <strong>${money(data.total)}</strong></span><small>Valid until ${niceDate(data.expires_at)}</small>`;
+  window.dispatchEvent(new CustomEvent('annapurna:promo-preview',{detail:data}));
+  result.innerHTML=`<b>✓ ${esc(data.title)}</b><span>${esc(data.code)} saves ${money(data.discount_amount)} • Food after discount <strong>${money(data.total)}</strong> (takeaway charge added separately)</span><small>Valid until ${niceDate(data.expires_at)}</small>`;
 }
 
 function renderCheckoutEnhancements(){
@@ -69,7 +70,7 @@ function renderCheckoutEnhancements(){
   panel.innerHTML=`<div class="ap-growth-part"><h2>🎟 Offer code</h2><p>Have an Annapurna offer? Apply it before placing your order.</p><div class="ap-promo-line"><input name="promo" autocomplete="off" maxlength="30" placeholder="e.g. ANNAPURNA10" value="${esc(growth.promoCode)}"><button class="ap-apply-promo" type="button">Apply</button></div><div class="ap-promo-result"></div></div>
   <div class="ap-growth-part"><h2>🕒 Collection time</h2><label class="ap-radio"><input type="radio" name="ap-collection" value="ASAP" ${growth.collectionMode==='ASAP'?'checked':''}> As soon as possible</label><label class="ap-radio"><input type="radio" name="ap-collection" value="SCHEDULED" ${growth.collectionMode==='SCHEDULED'?'checked':''}> Schedule collection</label><div class="ap-schedule-wrap" ${growth.collectionMode==='SCHEDULED'?'':'hidden'}><input class="ap-schedule-input" type="datetime-local" value="${esc(growth.collectionAt)}"><small>Schedule takeaway collection up to 7 days ahead, between 10:00 AM and 10:00 PM.</small></div></div>`;
   box.insertAdjacentElement('afterend',panel);
-  panel.querySelector('[name=promo]').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase();if(growth.promoPreview&&e.target.value!==growth.promoPreview.code){growth.promoPreview=null;panel.querySelector('.ap-promo-result').innerHTML=''}});
+  panel.querySelector('[name=promo]').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase();if(growth.promoPreview&&e.target.value!==growth.promoPreview.code){growth.promoPreview=null;window.dispatchEvent(new CustomEvent('annapurna:promo-preview',{detail:null}));panel.querySelector('.ap-promo-result').innerHTML=''}});
   panel.querySelector('.ap-apply-promo').addEventListener('click',()=>applyPromo(panel));
   panel.querySelectorAll('[name=ap-collection]').forEach(r=>r.addEventListener('change',()=>{
     growth.collectionMode=r.value;panel.querySelector('.ap-schedule-wrap').hidden=r.value!=='SCHEDULED';
@@ -78,7 +79,7 @@ function renderCheckoutEnhancements(){
     }
   }));
   panel.querySelector('.ap-schedule-input').addEventListener('change',e=>growth.collectionAt=e.target.value);
-  if(growth.promoCode&&!growth.promoPreview)setTimeout(()=>applyPromo(panel),100);
+  if(growth.promoCode)setTimeout(()=>applyPromo(panel),100);
 }
 
 function renderOfferBanner(){
@@ -205,3 +206,5 @@ observer.observe(document.documentElement,{childList:true,subtree:true});
   renderCheckoutEnhancements();renderOfferBanner();decorateMenuDietary();decorateManagerDietary();decorateOrderDetails();renderAdminGrowth();
   supabase.channel('ap-growth-menu-meta').on('postgres_changes',{event:'UPDATE',schema:'public',table:'menu_items'},async()=>{await loadMenuMeta();decorateMenuDietary();decorateManagerDietary()}).subscribe();
 })();
+
+window.addEventListener('annapurna:basket-changed',()=>{growth.promoPreview=null;const result=document.querySelector('.ap-promo-result');if(result)result.textContent='Basket changed. Apply your offer again.';});
