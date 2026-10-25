@@ -1,5 +1,9 @@
 // Illustrative images mapped to stable menu item IDs.
 const images={
+  "49f36ac6-2791-4ae9-ae6b-af0b0983d73f": "/menu-food/49f36ac6-2791-4ae9-ae6b-af0b0983d73f.webp",
+  "da966d74-df1f-439b-8a5d-36a2247893be": "/menu-food/da966d74-df1f-439b-8a5d-36a2247893be.webp",
+  "959fc912-e9c7-4970-8ab1-b2b8364b5bc2": "/menu-food/959fc912-e9c7-4970-8ab1-b2b8364b5bc2.webp",
+  "e28cb852-c477-4f80-b752-64e6eb1d4fe4": "/menu-food/e28cb852-c477-4f80-b752-64e6eb1d4fe4.webp",
   "a814c39e-3893-4df7-bdc9-5cddbb5206a8": "/menu-food/a814c39e-3893-4df7-bdc9-5cddbb5206a8.webp",
   "fa9d713a-a06b-4a61-af90-35d34a55680b": "/menu-food/fa9d713a-a06b-4a61-af90-35d34a55680b.webp",
   "6292539d-9f9c-4364-a40b-ae4b0ffaee4d": "/menu-food/6292539d-9f9c-4364-a40b-ae4b0ffaee4d.webp",
