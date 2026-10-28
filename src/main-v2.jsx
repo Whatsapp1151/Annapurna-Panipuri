@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState,useRef} from 'react';
 import {createRoot} from 'react-dom/client';
 import QRCode from 'qrcode';
+import {InstallApp} from './install-app';
 import {ToppingsPicker,ToppingSummary,OrderBill} from './pizza-toppings';
 import {isPizza,displayDishName,cartLine,appendCart,checkoutTotal} from './pizza-options';
 import {ShopNotice,RestaurantControl,useShopStatus,refreshOrderingStatus} from './shop-status';
@@ -125,6 +126,7 @@ function App(){
     </header>
     <main>
       <ShopNotice/>
+      {tab!=='admin'&&tab!=='checkout'&&<InstallApp/>}
       {notice&&<div className="notice" onClick={()=>setNotice('')}>{notice}</div>}
       {session&&profile&&role==='CUSTOMER'&&!profile.mobile_verified_at&&<div className="verifyBanner"><Phone size={20}/><div><b>Verify your mobile number</b><span>Mobile verification is required for customer ordering.</span></div><button onClick={()=>setPhoneVerify(true)}>Verify</button></div>}
       {tab==='home'&&<HomePage session={session} profile={profile} account={account} setTab={setTab} setAuthMode={setAuthMode} menu={menu.filter(x=>x.available)} orders={orders}/>}

@@ -123,16 +123,30 @@
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredInstallPrompt = e;
-    showBanner();
+    window.dispatchEvent(new Event('annapurna:install-state'));
   });
 
+  window.AnnapurnaInstall = {
+    available: () => !!deferredInstallPrompt,
+    prompt: async () => {
+      const event = deferredInstallPrompt;
+      if (!event) return null;
+      deferredInstallPrompt = null;
+      window.dispatchEvent(new Event('annapurna:install-state'));
+      await event.prompt();
+      return (await event.userChoice).outcome;
+    }
+  };
   window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    window.AnnapurnaInstall.installed = true;
+    window.dispatchEvent(new Event('annapurna:install-state'));
     document.querySelector('.ap-install-banner')?.remove();
     localStorage.removeItem('annapurnaInstallTipDismissed');
   });
 
   document.addEventListener('DOMContentLoaded', () => {
-    if ((isIOS && !isStandalone) || !supportsBackgroundPush) showBanner();
+    // Customer installation is offered by the compact React install control.
 
     document.addEventListener('click', e => {
       const btn = e.target.closest('button');

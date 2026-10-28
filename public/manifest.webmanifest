@@ -1,11 +1,24 @@
 {
-"name":"Annapurna Panipuri",
-"short_name":"Annapurna",
-"description":"Menu and Annapurna Rewards loyalty app",
-"start_url":"/",
-"scope":"/",
-"display":"standalone",
-"background_color":"#fffaf1",
-"theme_color":"#244d1c",
-"icons":[{"src":"/Logo1.png","sizes":"330x330","type":"image/png","purpose":"any"}]
+  "name": "Annapurna Panipuri",
+  "short_name": "Annapurna",
+  "description": "Menu and Annapurna Rewards loyalty app",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffaf1",
+  "theme_color": "#244d1c",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }
