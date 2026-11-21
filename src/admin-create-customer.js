@@ -72,7 +72,7 @@ async function createCustomer(event,wrap){
   if(password!==confirm)return status.textContent='Passwords do not match.';
   const btn=form.querySelector('button');btn.disabled=true;btn.textContent='Creating account…';status.textContent='';
   try{
-    const {data,error}=await supabase.functions.invoke('admin-create-customer',{body:{full_name:name,mobile_number:phone,password}});
+    const {data,error}=await supabase.functions.invoke('admin-create-customer',{body:{full_name:name,phone,password}});
     if(error)throw Object.assign(error,{_invokeData:data});
     if(!data?.ok)throw new Error(data?.error||'Customer account was not created.');
     form.reset();
